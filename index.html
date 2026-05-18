@@ -570,13 +570,13 @@
   function renderSongs(data) {
     hide('songs-loading');
     if (!data.length) { show('songs-error'); g('songs-error').querySelector('p').textContent = 'no songs yet.'; return; }
-    tracks = data;
-    setPlayerTrack(0);
     var list = g('songs-list'); list.innerHTML = '';
 
     // Filter: hide inactive, keep active + coming_soon
-    var allData = data;
+    var allData = data.slice();
     data = data.filter(function(t){ return t.status !== 'inactive'; });
+    // set tracks to filtered audio-only list for player
+    tracks = data;
 
     // Group: ep/album grouped by release_name, singles stay flat
     var groups = [];
@@ -677,6 +677,7 @@
       });
     }
 
+    if (tracks.length) setPlayerTrack(0);
     show('songs-content');
   }
 
