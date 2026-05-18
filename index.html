@@ -88,8 +88,8 @@
   .cs-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); opacity: 0.7; }
 
   /* ── TRACK DETAIL PANEL ── */
-  .panel { position: absolute; inset: 0; z-index: 300; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; overflow: hidden; pointer-events: none; }
-  .panel.open { pointer-events: all; }
+  .panel { position: absolute; inset: 0; z-index: 300; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; overflow: hidden; pointer-events: none; visibility: hidden; }
+  .panel.open { pointer-events: all; visibility: visible; }
   .panel.open { transform: translateY(0); }
   .td-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
   .td-bg img { width: 100%; height: 100%; object-fit: cover; filter: blur(40px) brightness(0.45) saturate(0.7); transform: scale(1.1); display: block; }
@@ -825,8 +825,6 @@
     if (t.artwork_url) {
       var img = new Image(); img.src = t.artwork_url; img.alt = t.title;
       artEl.insertBefore(img, artEl.firstChild);
-      var bg = g('td-bg'); var eBg = bg.querySelector('img'); if (eBg) eBg.remove();
-      var bi = new Image(); bi.src = t.artwork_url; bg.insertBefore(bi, bg.firstChild);
       g('td-bg-fallback').style.display = 'none';
     } else { g('td-bg-fallback').style.display = 'block'; }
     var ls = g('td-lyrics-section');
@@ -835,7 +833,22 @@
     if (t.credits && t.credits.trim()) { g('td-credits').textContent = t.credits; cs.style.display = 'block'; } else { cs.style.display = 'none'; }
   }
 
-  function openTrackDetail()       { if (!tracks.length) return; updateDetailUI(tracks[currentIdx]); g('track-detail').classList.add('open'); }
+  function openTrackDetail() {
+    if (!tracks.length) return;
+    var t = tracks[currentIdx];
+    updateDetailUI(t);
+    // only inject bg image when panel is actually opening
+    var bg = g('td-bg');
+    var eBg = bg.querySelector('img'); if (eBg) eBg.remove();
+    if (t.artwork_url) {
+      var bi = new Image(); bi.src = t.artwork_url;
+      bg.insertBefore(bi, bg.firstChild);
+      g('td-bg-fallback').style.display = 'none';
+    } else {
+      g('td-bg-fallback').style.display = 'block';
+    }
+    g('track-detail').classList.add('open');
+  }
   function openTrackDetailFor(idx) { setPlayerTrack(idx); openTrackDetail(); }
   function closeTrackDetail() {
     g('track-detail').classList.remove('open');
