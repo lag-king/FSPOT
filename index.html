@@ -49,7 +49,7 @@
   .track-row:last-child { border-bottom: none; }
   .track-row:active { opacity: 0.6; }
   .track-num { width: 18px; text-align: center; font-size: 11px; color: var(--ink-faint); font-family: 'Inter', sans-serif; flex-shrink: 0; }
-  .track-art { width: 44px; height: 44px; border-radius: 5px; background: var(--paper-deep); border: 0.5px solid var(--paper-deeper); flex-shrink: 0; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
+  .track-art { width: 44px; height: 44px; border-radius: 5px; background: var(--paper-deep); border: 0.5px solid var(--paper-deeper); flex-shrink: 0; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; isolation: isolate; }
   .track-art img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 1; border-radius: 4px; }
   .mini-ring { position: absolute; border-radius: 50%; border: 0.5px solid var(--paper-deeper); pointer-events: none; }
   .track-info { flex: 1; min-width: 0; }
@@ -204,7 +204,7 @@
   /* track manage list */
   .manage-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--paper-mid); }
   .manage-row:last-child { border-bottom: none; }
-  .manage-thumb { width: 38px; height: 38px; border-radius: 4px; background: var(--paper-deep); overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .manage-thumb { width: 38px; height: 38px; border-radius: 4px; background: var(--paper-deep); overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; position: relative; }
   .manage-thumb img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
   .manage-thumb svg { width: 16px; height: 16px; fill: none; stroke: var(--ink-faint); stroke-width: 1.5; }
   .manage-info { flex: 1; min-width: 0; }
@@ -610,7 +610,7 @@
         ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="var(--amber)"><polygon points="5,3 19,12 5,21"/></svg>'
         : (i + 1)) + '</span>' +
       '<div class="track-art">' + (t.artwork_url
-        ? '<img src="' + t.artwork_url + '" alt="' + esc(t.title) + '" style="position:relative;z-index:1;">'
+        ? '<img src="' + t.artwork_url + '" alt="' + esc(t.title) + '" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;border-radius:4px;">'
         : '<div class="mini-ring" style="width:90%;height:90%"></div><div class="mini-ring" style="width:65%;height:65%"></div><div class="mini-ring" style="width:38%;height:38%;background:var(--amber);border:none;opacity:0.5"></div>') + '</div>' +
       '<div class="track-info"><div class="track-title">' + esc(t.title) + '</div><div class="track-sub">' + (t.release_type || 'single') + ' &middot; ' + (t.year || '') + '</div></div>' +
       '<span class="track-dur">' + (t.duration || '—') + '</span>' +
@@ -653,7 +653,7 @@
     g('p-band-name').textContent  = 'as night calls';
     var thumb = g('p-thumb');
     var ei = thumb.querySelector('img'); if (ei) ei.remove();
-    if (t.artwork_url) { var img = new Image(); img.src = t.artwork_url; img.alt = t.title; thumb.appendChild(img); }
+    if (t.artwork_url) { var img = new Image(); img.src = t.artwork_url; img.alt = t.title; img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;border-radius:4px;'; thumb.appendChild(img); }
     audio.src = t.audio_url || ''; audio.load();
     g('prog-fill').style.width = '0%';
     g('p-time').textContent = '0:00';
@@ -1041,7 +1041,7 @@
       var wrap = document.createElement('div');
       wrap.innerHTML =
         '<div class="manage-row" id="mr-'+t.id+'">'+
-          '<div class="manage-thumb">'+(t.artwork_url?'<img src="'+t.artwork_url+'" alt="">':'<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>')+'</div>'+
+          '<div class="manage-thumb">'+(t.artwork_url?'<img src="'+t.artwork_url+'" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;">':'<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>')+'</div>'+
           '<div class="manage-info"><div class="manage-name">'+esc(t.title)+'</div><div class="manage-type">'+t.type+' · #'+t.order+'</div></div>'+
           '<div class="manage-actions">'+
             '<button class="icon-btn" onclick="toggleEdit('+t.id+')" title="edit"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'+
