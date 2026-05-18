@@ -1097,10 +1097,14 @@
         headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        var errText = await res.text();
+        throw new Error(res.status + ': ' + errText);
+      }
       btn.textContent = '✓ saved'; setTimeout(function(){ loadTracks(); g('ed-'+id).classList.remove('open'); }, 800);
     } catch(e) {
-      btn.disabled = false; btn.textContent = 'save changes'; alert('save failed');
+      btn.disabled = false; btn.textContent = 'save changes';
+      alert('save failed: ' + e.message);
     }
   }
 
