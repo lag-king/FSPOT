@@ -549,9 +549,11 @@
       if (!res.ok) throw new Error();
       var data = await res.json();
 
+      console.log('all tracks from supabase:', JSON.stringify(data.map(function(t){ return {id:t.id,title:t.title,type:t.type,status:t.status}; })));
       var songs  = data.filter(function(t){ return t.type === 'audio'; });
       var videos = data.filter(function(t){ return t.type === 'video'; });
       var live   = data.filter(function(t){ return t.type === 'live'; });
+      console.log('songs:', songs.length, 'videos:', videos.length, 'live:', live.length);
 
       renderSongs(songs);
       renderVideoSection('videos', videos);
