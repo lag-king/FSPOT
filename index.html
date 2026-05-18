@@ -591,10 +591,10 @@
     var releaseMap = {};
 
     data.forEach(function(t) {
-      if (t.release_type === 'single' || !t.release_name) {
+      if (t.release_type === 'single' || !t.release_name || t.release_name.trim() === '') {
         singles.push(t);
       } else {
-        var key = t.release_name;
+        var key = t.release_name || 'untitled';
         if (!releaseMap[key]) {
           releaseMap[key] = { name: t.release_name, release_type: t.release_type, year: t.year, artwork_url: t.artwork_url, tracks: [] };
           groups.push(releaseMap[key]);
@@ -612,14 +612,14 @@
         ? '<img src="' + grp.artwork_url + '" style="width:100%;height:100%;object-fit:cover;" alt="">'
         : '<div class="mini-ring" style="width:85%;height:85%"></div><div class="mini-ring" style="width:55%;height:55%"></div>';
 
-      var safeKey = grp.name.replace(/[^a-zA-Z0-9]/g, '_');
+      var safeKey = (grp.name || 'release').replace(/[^a-zA-Z0-9]/g, '_');
 
       var header = document.createElement('div');
       header.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 0 10px;border-bottom:0.5px solid var(--paper-deep);cursor:pointer;margin-bottom:2px;';
       header.innerHTML =
         '<div class="track-art" style="width:52px;height:52px;border-radius:6px;flex-shrink:0;">' + artHtml + '</div>' +
         '<div style="flex:1;min-width:0;">' +
-          '<div style="font-size:14px;font-weight:400;color:var(--ink);letter-spacing:-0.01em;margin-bottom:2px;">' + esc(grp.name) + '</div>' +
+          '<div style="font-size:14px;font-weight:400;color:var(--ink);letter-spacing:-0.01em;margin-bottom:2px;">' + esc(grp.name || 'untitled') + '</div>' +
           '<div style="font-size:10px;color:var(--ink-light);font-family:Inter,sans-serif;">' + grp.release_type + ' &middot; ' + grp.tracks.length + ' tracks' + (grp.year ? ' &middot; ' + grp.year : '') + '</div>' +
         '</div>' +
         '<div id="chev_' + safeKey + '" style="color:var(--ink-faint);transition:transform 0.2s;flex-shrink:0;">' +
