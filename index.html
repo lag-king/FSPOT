@@ -364,48 +364,8 @@
     </button>
   </div>
 
-  <!-- ── TRACK DETAIL ── -->
-  <div class="panel" id="track-detail">
-    <div class="td-bg" id="td-bg"><div class="td-bg-fallback" id="td-bg-fallback"></div></div>
-    <div class="td-overlay"></div>
-    <div class="td-inner">
-      <div class="td-header">
-        <button class="td-close" onclick="closeTrackDetail()"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
-        <span class="td-header-title">now playing</span>
-        <div style="width:34px"></div>
-      </div>
-      <div class="td-art" id="td-art">
-        <div class="td-art-ring" style="width:85%;height:85%"></div>
-        <div class="td-art-ring" style="width:65%;height:65%"></div>
-        <div class="td-art-ring" style="width:44%;height:44%"></div>
-        <div class="td-art-ring" style="width:22%;height:22%;background:rgba(184,111,46,0.5);border:none;border-radius:50%"></div>
-      </div>
-      <div class="td-meta">
-        <div class="td-title" id="td-title">—</div>
-        <div class="td-artist">as night calls</div>
-      </div>
-      <div class="td-controls">
-        <div class="td-prog-bar" id="td-prog-bar" onclick="tdSeek(event)"><div class="td-prog-fill" id="td-prog-fill"></div></div>
-        <div class="td-time-row"><span id="td-cur">0:00</span><span id="td-dur">—</span></div>
-        <div class="td-btns">
-          <button class="td-ctrl" onclick="prevTrack()"><svg viewBox="0 0 24 24"><polygon points="19,20 9,12 19,4"/><line x1="5" y1="4" x2="5" y2="20"/></svg></button>
-          <button class="td-play" onclick="togglePlay()"><svg viewBox="0 0 24 24" id="td-play-icon"><polygon points="5,3 19,12 5,21" fill="var(--ink)"/></svg></button>
-          <button class="td-ctrl" onclick="nextTrack()"><svg viewBox="0 0 24 24"><polygon points="5,4 15,12 5,20"/><line x1="19" y1="4" x2="19" y2="20"/></svg></button>
-        </div>
-      </div>
-      <div class="td-divider"></div>
-      <div class="td-section" id="td-lyrics-section" style="display:none">
-        <div class="td-sec-label">lyrics</div>
-        <div class="td-lyrics" id="td-lyrics"></div>
-      </div>
-      <div class="td-section" id="td-credits-section" style="display:none">
-        <div class="td-sec-label">credits</div>
-        <div class="td-credits-text" id="td-credits"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── PROFILE PANEL ── -->
+  <!-- track detail rendered dynamically -->
+    <!-- ── PROFILE PANEL ── -->
   <div class="side-panel" id="profile-panel">
     <div class="sp-header"><span class="sp-title">your profile</span><button class="close-btn" onclick="closeProfile()"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
     <div class="sp-body">
@@ -794,12 +754,12 @@
     if (!audio.duration) return;
     var pct = audio.currentTime/audio.duration*100;
     g('prog-fill').style.width = pct+'%';
-    g('td-prog-fill').style.width = pct+'%';
     g('p-time').textContent = fmt(audio.currentTime);
-    g('td-cur').textContent = fmt(audio.currentTime);
+    var tdpf = g('td-prog-fill'); if (tdpf) tdpf.style.width = pct+'%';
+    var tdc = g('td-cur'); if (tdc) tdc.textContent = fmt(audio.currentTime);
   });
   audio.addEventListener('loadedmetadata', function(){
-    g('td-dur').textContent = fmt(audio.duration);
+    var tdd = g('td-dur'); if (tdd) tdd.textContent = fmt(audio.duration);
   });
 
   function setPlayUI(p) {
@@ -807,13 +767,13 @@
     var pl = '<polygon points="5,3 19,12 5,21" fill="var(--paper)"/>';
     var psi= '<rect x="6" y="4" width="4" height="16" rx="1" fill="var(--ink)"/><rect x="14" y="4" width="4" height="16" rx="1" fill="var(--ink)"/>';
     var pli= '<polygon points="5,3 19,12 5,21" fill="var(--ink)"/>';
-    g('play-icon').innerHTML    = p ? ps : pl;
-    g('td-play-icon').innerHTML = p ? psi : pli;
+    g('play-icon').innerHTML = p ? ps : pl;
+    var tdpi = g('td-play-icon'); if (tdpi) tdpi.innerHTML = p ? psi : pli;
   }
 
   function fmt(s)  { var m=Math.floor(s/60),x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }
   function seekTo(e){ if(!audio.duration) return; var b=g('prog-bar'); audio.currentTime=(e.clientX-b.getBoundingClientRect().left)/b.offsetWidth*audio.duration; }
-  function tdSeek(e){ if(!audio.duration) return; var b=g('td-prog-bar'); audio.currentTime=(e.clientX-b.getBoundingClientRect().left)/b.offsetWidth*audio.duration; }
+  function tdSeek(e){ if(!audio.duration) return; var b=g('td-prog-bar'); if(!b) return; audio.currentTime=(e.clientX-b.getBoundingClientRect().left)/b.offsetWidth*audio.duration; }
 
   // ────────────────────────────────────────────────
   // TRACK DETAIL
@@ -836,26 +796,100 @@
   function openTrackDetail() {
     if (!tracks.length) return;
     var t = tracks[currentIdx];
-    updateDetailUI(t);
-    // only inject bg image when panel is actually opening
-    var bg = g('td-bg');
-    var eBg = bg.querySelector('img'); if (eBg) eBg.remove();
-    if (t.artwork_url) {
-      var bi = new Image(); bi.src = t.artwork_url;
-      bg.insertBefore(bi, bg.firstChild);
-      g('td-bg-fallback').style.display = 'none';
-    } else {
-      g('td-bg-fallback').style.display = 'block';
+
+    // Remove any existing panel
+    var existing = document.getElementById('track-detail');
+    if (existing) existing.remove();
+
+    var artHtml = t.artwork_url
+      ? '<img src="'+t.artwork_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" alt="">'
+      : '<div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;"><div style="position:absolute;width:85%;height:85%;border-radius:50%;border:0.5px solid rgba(255,255,255,0.12)"></div><div style="position:absolute;width:60%;height:60%;border-radius:50%;border:0.5px solid rgba(255,255,255,0.12)"></div><div style="position:absolute;width:35%;height:35%;border-radius:50%;background:rgba(184,111,46,0.4)"></div></div>';
+
+    var bgStyle = t.artwork_url
+      ? 'background-image:url('+t.artwork_url+');background-size:cover;background-position:center;filter:blur(40px) brightness(0.45) saturate(0.7);transform:scale(1.15);'
+      : 'background:linear-gradient(160deg,#3A2A1A 0%,#1A150E 100%);';
+
+    var lyricsHtml = (t.lyrics && t.lyrics.trim())
+      ? '<div style="padding:0 28px;margin-bottom:24px;"><div style="font-size:9px;font-family:Inter,sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:rgba(239,230,211,0.35);margin-bottom:10px;">lyrics</div><div style="font-size:14px;color:rgba(239,230,211,0.8);line-height:1.9;font-weight:300;white-space:pre-line;">'+esc(t.lyrics)+'</div></div>'
+      : '';
+
+    var creditsHtml = (t.credits && t.credits.trim())
+      ? '<div style="padding:0 28px;margin-bottom:24px;"><div style="font-size:9px;font-family:Inter,sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:rgba(239,230,211,0.35);margin-bottom:10px;">credits</div><div style="font-size:12px;color:rgba(239,230,211,0.55);line-height:1.9;font-family:Inter,sans-serif;white-space:pre-line;">'+esc(t.credits)+'</div></div>'
+      : '';
+
+    var panel = document.createElement('div');
+    panel.id = 'track-detail';
+    panel.style.cssText = 'position:fixed;inset:0;z-index:500;display:flex;flex-direction:column;overflow:hidden;width:390px;left:50%;transform:translateX(-50%);';
+
+    panel.innerHTML =
+      '<div style="position:absolute;inset:0;overflow:hidden;z-index:0;"><div style="position:absolute;inset:0;'+bgStyle+'"></div></div>'+
+      '<div style="position:absolute;inset:0;background:rgba(15,10,5,0.5);z-index:1;"></div>'+
+      '<div style="position:relative;z-index:2;display:flex;flex-direction:column;height:100%;overflow-y:auto;padding-bottom:40px;">'+
+        '<div style="padding:52px 24px 16px;display:flex;align-items:center;justify-content:space-between;">'+
+          '<button onclick="closeTrackDetail()" style="background:rgba(255,255,255,0.1);border:none;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">'+
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EFE6D3" stroke-width="1.8" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>'+
+          '</button>'+
+          '<span style="font-size:11px;color:rgba(239,230,211,0.5);font-family:Inter,sans-serif;letter-spacing:0.08em;text-transform:uppercase;">now playing</span>'+
+          '<div style="width:34px;"></div>'+
+        '</div>'+
+
+        '<div style="width:230px;height:230px;border-radius:8px;margin:8px auto 28px;overflow:hidden;background:rgba(255,255,255,0.07);border:0.5px solid rgba(255,255,255,0.1);flex-shrink:0;position:relative;">'+artHtml+'</div>'+
+
+        '<div style="padding:0 28px;margin-bottom:24px;">'+
+          '<div style="font-size:22px;font-weight:400;color:#EFE6D3;letter-spacing:-0.03em;line-height:1.2;margin-bottom:4px;">'+esc(t.title||'—')+'</div>'+
+          '<div style="font-size:13px;color:rgba(239,230,211,0.55);font-family:Inter,sans-serif;">as night calls</div>'+
+        '</div>'+
+
+        '<div style="padding:0 28px 24px;">'+
+          '<div id="td-prog-bar" style="height:2px;background:rgba(255,255,255,0.15);border-radius:1px;margin-bottom:6px;cursor:pointer;position:relative;" onclick="tdSeek(event)">'+
+            '<div id="td-prog-fill" style="height:100%;background:#EFE6D3;border-radius:1px;width:0%;"></div>'+
+          '</div>'+
+          '<div style="display:flex;justify-content:space-between;font-size:10px;color:rgba(239,230,211,0.4);font-family:Inter,sans-serif;margin-bottom:20px;">'+
+            '<span id="td-cur">0:00</span><span id="td-dur">—</span>'+
+          '</div>'+
+          '<div style="display:flex;align-items:center;justify-content:center;gap:28px;">'+
+            '<button onclick="prevTrack()" style="background:none;border:none;cursor:pointer;color:rgba(239,230,211,0.65);display:flex;padding:0;">'+
+              '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polygon points="19,20 9,12 19,4"/><line x1="5" y1="4" x2="5" y2="20"/></svg>'+
+            '</button>'+
+            '<button id="td-play-btn" onclick="togglePlay()" style="width:56px;height:56px;border-radius:50%;background:#EFE6D3;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;flex-shrink:0;">'+
+              '<svg viewBox="0 0 24 24" id="td-play-icon" width="20" height="20"><polygon points="5,3 19,12 5,21" fill="var(--ink)"/></svg>'+
+            '</button>'+
+            '<button onclick="nextTrack()" style="background:none;border:none;cursor:pointer;color:rgba(239,230,211,0.65);display:flex;padding:0;">'+
+              '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polygon points="5,4 15,12 5,20"/><line x1="19" y1="4" x2="19" y2="20"/></svg>'+
+            '</button>'+
+          '</div>'+
+        '</div>'+
+
+        '<div style="height:0.5px;background:rgba(255,255,255,0.08);margin:0 28px 24px;"></div>'+
+        lyricsHtml +
+        creditsHtml +
+      '</div>';
+
+    document.querySelector('.device').appendChild(panel);
+
+    // sync progress
+    if (audio.duration) {
+      g('td-prog-fill').style.width = (audio.currentTime/audio.duration*100)+'%';
+      g('td-cur').textContent = fmt(audio.currentTime);
+      g('td-dur').textContent = fmt(audio.duration);
     }
-    g('track-detail').classList.add('open');
+    // sync play state
+    var psi = '<rect x="6" y="4" width="4" height="16" rx="1" fill="var(--ink)"/><rect x="14" y="4" width="4" height="16" rx="1" fill="var(--ink)"/>';
+    var pli = '<polygon points="5,3 19,12 5,21" fill="var(--ink)"/>';
+    var tdpi = g('td-play-icon');
+    if (tdpi) tdpi.innerHTML = audio.paused ? pli : psi;
+
+    // animate in
+    panel.style.transform = 'translateX(-50%) translateY(100%)';
+    panel.style.transition = 'transform 0.3s cubic-bezier(0.4,0,0.2,1)';
+    requestAnimationFrame(function(){ panel.style.transform = 'translateX(-50%) translateY(0)'; });
   }
   function openTrackDetailFor(idx) { setPlayerTrack(idx); openTrackDetail(); }
   function closeTrackDetail() {
-    g('track-detail').classList.remove('open');
-    // clear bg image to prevent bleed-through
-    var bg = g('td-bg');
-    var eBg = bg.querySelector('img'); if (eBg) eBg.remove();
-    g('td-bg-fallback').style.display = 'block';
+    var panel = g('track-detail');
+    if (!panel) return;
+    panel.style.transform = 'translateX(-50%) translateY(100%)';
+    setTimeout(function(){ if (panel.parentNode) panel.parentNode.removeChild(panel); }, 320);
   }
 
   // ────────────────────────────────────────────────
