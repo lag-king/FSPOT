@@ -555,7 +555,14 @@
       var live   = data.filter(function(t){ return t.type === 'live'; });
       console.log('songs:', songs.length, 'videos:', videos.length, 'live:', live.length);
 
-      renderSongs(songs);
+      try {
+        renderSongs(songs);
+      } catch(e) {
+        console.error('renderSongs crashed:', e.message, e.stack);
+        g('songs-loading').style.display = 'none';
+        g('songs-error').style.display = 'block';
+        g('songs-error').querySelector('p').textContent = 'render error: ' + e.message;
+      }
       renderVideoSection('videos', videos);
       renderVideoSection('live', live);
       renderManageList(data);
