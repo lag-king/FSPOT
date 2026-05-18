@@ -702,18 +702,26 @@
   // TRACK DETAIL
   // ────────────────────────────────────────────────
   function updateDetailUI(t) {
-    g('td-title').textContent = t.title||'—';
+    // panel is dynamic - only update if elements exist
+    var titleEl = g('td-title'); if (titleEl) titleEl.textContent = t.title||'—';
     var artEl = g('td-art');
-    var eImg = artEl.querySelector('img'); if (eImg) eImg.remove();
-    if (t.artwork_url) {
-      var img = new Image(); img.src = t.artwork_url; img.alt = t.title;
-      artEl.insertBefore(img, artEl.firstChild);
-      g('td-bg-fallback').style.display = 'none';
-    } else { g('td-bg-fallback').style.display = 'block'; }
+    if (artEl) {
+      var eImg = artEl.querySelector('img'); if (eImg) eImg.remove();
+      if (t.artwork_url) {
+        var img = new Image(); img.src = t.artwork_url; img.alt = t.title;
+        artEl.insertBefore(img, artEl.firstChild);
+      }
+    }
     var ls = g('td-lyrics-section');
-    if (t.lyrics && t.lyrics.trim()) { g('td-lyrics').textContent = t.lyrics; ls.style.display = 'block'; } else { ls.style.display = 'none'; }
+    if (ls) {
+      if (t.lyrics && t.lyrics.trim()) { var lyrEl = g('td-lyrics'); if(lyrEl) lyrEl.textContent = t.lyrics; ls.style.display = 'block'; }
+      else { ls.style.display = 'none'; }
+    }
     var cs = g('td-credits-section');
-    if (t.credits && t.credits.trim()) { g('td-credits').textContent = t.credits; cs.style.display = 'block'; } else { cs.style.display = 'none'; }
+    if (cs) {
+      if (t.credits && t.credits.trim()) { var credEl = g('td-credits'); if(credEl) credEl.textContent = t.credits; cs.style.display = 'block'; }
+      else { cs.style.display = 'none'; }
+    }
   }
 
   function openTrackDetail() {
