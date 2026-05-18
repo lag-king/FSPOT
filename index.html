@@ -1091,6 +1091,7 @@
       credits:  g('et-credits-'+id).value.trim() || null,
       status:   g('et-status-'+id).value || 'active'
     };
+    console.log('saving payload:', JSON.stringify(payload));
     try {
       var res = await fetch(SB_URL + '/rest/v1/tracks?id=eq.'+id, {
         method: 'PATCH',
@@ -1104,7 +1105,8 @@
       btn.textContent = '✓ saved'; setTimeout(function(){ loadTracks(); g('ed-'+id).classList.remove('open'); }, 800);
     } catch(e) {
       btn.disabled = false; btn.textContent = 'save changes';
-      alert('save failed: ' + e.message);
+      alert('save failed:\n' + e.message + '\n\nCheck browser console for details.');
+      console.error('saveEdit error:', e);
     }
   }
 
