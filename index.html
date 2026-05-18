@@ -1015,13 +1015,18 @@
       order:        parseInt(g('f-order').value) || 99
     };
 
+    console.log('submitting:', JSON.stringify(payload));
     try {
       var res = await fetch(SB_URL + '/rest/v1/tracks', {
         method: 'POST',
         headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        var errBody = await res.text();
+        console.error('Supabase error:', res.status, errBody);
+        throw new Error(res.status + ': ' + errBody);
+      }
       show('form-ok');
       // clear
       ['f-title','f-year','f-duration','f-lyrics','f-credits','f-order','f-youtube-url','f-release-name'].forEach(function(id){ g(id).value = ''; });
@@ -1031,7 +1036,10 @@
       hide('audio-upload-ok'); hide('art-upload-ok');
       loadTracks();
     } catch(e) {
+      var errDiv = g('form-err');
+      errDiv.textContent = 'error: ' + e.message;
       show('form-err');
+      console.error('submitTrack error:', e);
     }
     btn.disabled = false; btn.textContent = 'save track';
   }
