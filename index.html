@@ -576,117 +576,30 @@
 
   function renderSongs(data) {
     hide('songs-loading');
-    if (!data.length) { show('songs-error'); g('songs-error').querySelector('p').textContent = 'no songs yet.'; return; }
-    var list = g('songs-list'); list.innerHTML = '';
-
-    // Filter: hide inactive, keep active + coming_soon
-    var allData = data.slice();
-    data = data.filter(function(t){ return t.status !== 'inactive'; });
-    // set tracks to filtered audio-only list for player
-    tracks = data;
-
-    // Group: ep/album grouped by release_name, singles stay flat
-    var groups = [];
-    var singles = [];
-    var releaseMap = {};
-
-    data.forEach(function(t) {
-      if (t.release_type === 'single' || !t.release_name || t.release_name.trim() === '') {
-        singles.push(t);
-      } else {
-        var key = t.release_name || 'untitled';
-        if (!releaseMap[key]) {
-          releaseMap[key] = { name: t.release_name, release_type: t.release_type, year: t.year, artwork_url: t.artwork_url, tracks: [] };
-          groups.push(releaseMap[key]);
-        }
-        releaseMap[key].tracks.push(t);
-      }
-    });
-
-    // Render releases first
-    groups.forEach(function(grp) {
-      var block = document.createElement('div');
-      block.style.marginBottom = '24px';
-
-      var artHtml = grp.artwork_url
-        ? '<img src="' + grp.artwork_url + '" style="width:100%;height:100%;object-fit:cover;" alt="">'
-        : '<div class="mini-ring" style="width:85%;height:85%"></div><div class="mini-ring" style="width:55%;height:55%"></div>';
-
-      var safeKey = (grp.name || 'release').replace(/[^a-zA-Z0-9]/g, '_');
-
-      var header = document.createElement('div');
-      header.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 0 10px;border-bottom:0.5px solid var(--paper-deep);cursor:pointer;margin-bottom:2px;';
-      header.innerHTML =
-        '<div class="track-art" style="width:52px;height:52px;border-radius:6px;flex-shrink:0;">' + artHtml + '</div>' +
-        '<div style="flex:1;min-width:0;">' +
-          '<div style="font-size:14px;font-weight:400;color:var(--ink);letter-spacing:-0.01em;margin-bottom:2px;">' + esc(grp.name || 'untitled') + '</div>' +
-          '<div style="font-size:10px;color:var(--ink-light);font-family:Inter,sans-serif;">' + grp.release_type + ' &middot; ' + grp.tracks.length + ' tracks' + (grp.year ? ' &middot; ' + grp.year : '') + '</div>' +
-        '</div>' +
-        '<div id="chev_' + safeKey + '" style="color:var(--ink-faint);transition:transform 0.2s;flex-shrink:0;">' +
-          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>' +
-        '</div>';
-
-      var trackWrap = document.createElement('div');
-      trackWrap.id = 'reltracks_' + safeKey;
-
-      grp.tracks.forEach(function(t) {
-        trackWrap.appendChild(makeTrackRow(t, data.indexOf(t)));
-      });
-
-      header.addEventListener('click', function() {
-        var open = trackWrap.style.display !== 'none';
-        trackWrap.style.display = open ? 'none' : 'block';
-        var chev = document.getElementById('chev_' + safeKey);
-        if (chev) chev.style.transform = open ? 'rotate(-90deg)' : '';
-      });
-
-      block.appendChild(header);
-      block.appendChild(trackWrap);
-      list.appendChild(block);
-    });
-
-    // Render singles
-    if (singles.length) {
-      if (groups.length) {
-        var lbl = document.createElement('div');
-        lbl.className = 'sec-label';
-        lbl.style.marginTop = '8px';
-        lbl.textContent = 'singles';
-        list.appendChild(lbl);
-      }
-      singles.forEach(function(t) {
-        list.appendChild(makeTrackRow(t, data.indexOf(t)));
-      });
+    if (!data || !data.length) {
+      show('songs-error');
+      return;
     }
 
-    // Render coming_soon teasers
-    var teasers = allData.filter(function(t){ return t.status === 'coming_soon'; });
-    if (teasers.length) {
-      var teaserLbl = document.createElement('div');
-      teaserLbl.className = 'sec-label';
-      teaserLbl.style.marginTop = '16px';
-      teaserLbl.textContent = 'coming soon';
-      list.appendChild(teaserLbl);
-      teasers.forEach(function(t) {
-        var card = document.createElement('div');
-        card.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--paper-mid);opacity:0.7;';
-        var artHtml = t.artwork_url
-          ? '<img src="' + t.artwork_url + '" style="width:100%;height:100%;object-fit:cover;filter:blur(3px);" alt="">'
-          : '<div class="mini-ring" style="width:85%;height:85%"></div>';
-        card.innerHTML =
-          '<div class="track-art" style="overflow:hidden;">' + artHtml + '</div>' +
-          '<div style="flex:1;min-width:0;">' +
-            '<div style="font-size:13px;font-weight:400;color:var(--ink-mid);filter:blur(3px);user-select:none;">coming soon</div>' +
-            '<div style="font-size:10px;color:var(--ink-faint);font-family:Inter,sans-serif;margin-top:2px;">stay tuned</div>' +
-          '</div>' +
-          '<div style="font-size:9px;padding:3px 9px;border:0.5px solid var(--paper-deeper);border-radius:20px;color:var(--ink-faint);font-family:Inter,sans-serif;white-space:nowrap;">coming soon</div>';
-        list.appendChild(card);
-      });
+    // filter inactive
+    var visible = [];
+    for (var i = 0; i < data.length; i++) {
+      if (data[i].status !== 'inactive') visible.push(data[i]);
+    }
+
+    tracks = visible;
+
+    var list = g('songs-list');
+    list.innerHTML = '';
+
+    for (var j = 0; j < visible.length; j++) {
+      list.appendChild(makeTrackRow(visible[j], j));
     }
 
     if (tracks.length) setPlayerTrack(0);
     show('songs-content');
   }
+
 
   function makeTrackRow(t, i) {
     var row = document.createElement('div');
