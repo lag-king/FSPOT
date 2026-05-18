@@ -1076,6 +1076,31 @@
             '</select></div>'+
           '<div class="fg"><label class="fl">lyrics</label><textarea class="fi fta" id="et-lyrics-'+t.id+'">'+esc(t.lyrics||'')+'</textarea></div>'+
           '<div class="fg"><label class="fl">credits</label><textarea class="fi fta" id="et-credits-'+t.id+'">'+esc(t.credits||'')+'</textarea></div>'+
+
+          '<div class="fg"><label class="fl">audio file</label>'+
+            '<div class="upload-zone" style="position:relative;">'+
+              '<input type="file" accept="audio/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" onchange="handleEditAudioUpload(this,'+t.id+')">'+
+              '<div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>'+
+              '<div class="upload-label" id="et-audio-label-'+t.id+'">'+(t.audio_url ? '✓ has audio — tap to replace' : 'tap to upload audio')+'</div>'+
+              '<div class="upload-hint">mp3, wav, aac</div>'+
+              '<div class="upload-progress" id="et-audio-prog-'+t.id+'"><div class="upload-progress-bar"><div class="upload-progress-fill" id="et-audio-fill-'+t.id+'"></div></div><div class="upload-progress-label" id="et-audio-plabel-'+t.id+'">uploading...</div></div>'+
+              '<div class="upload-success" id="et-audio-ok-'+t.id+'">✓ audio updated</div>'+
+              '<div class="upload-error" id="et-audio-err-'+t.id+'">upload failed</div>'+
+            '</div>'+
+          '</div>'+
+
+          '<div class="fg"><label class="fl">artwork</label>'+
+            '<div class="upload-zone" style="position:relative;">'+
+              '<input type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" onchange="handleEditArtUpload(this,'+t.id+')">'+
+              '<div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>'+
+              '<div class="upload-label" id="et-art-label-'+t.id+'">'+(t.artwork_url ? '✓ has artwork — tap to replace' : 'tap to upload artwork')+'</div>'+
+              '<div class="upload-hint">jpg, png, webp</div>'+
+              '<div class="upload-progress" id="et-art-prog-'+t.id+'"><div class="upload-progress-bar"><div class="upload-progress-fill" id="et-art-fill-'+t.id+'"></div></div><div class="upload-progress-label" id="et-art-plabel-'+t.id+'">uploading...</div></div>'+
+              '<div class="upload-success" id="et-art-ok-'+t.id+'">✓ artwork updated</div>'+
+              '<div class="upload-error" id="et-art-err-'+t.id+'">upload failed</div>'+
+            '</div>'+
+          '</div>'+
+
           '<button class="edit-save-btn" id="esb-'+t.id+'" onclick="saveEdit('+t.id+')">save changes</button>'+
         '</div>';
       list.appendChild(wrap);
@@ -1087,9 +1112,45 @@
     drawer.classList.toggle('open');
   }
 
+  // per-track edit upload storage
+  var editUploads = {};
+
+  async function handleEditAudioUpload(input, id) {
+    var file = input.files[0]; if (!file) return;
+    // auto detect duration
+    var tempUrl = URL.createObjectURL(file);
+    var tempAud = new Audio(); tempAud.src = tempUrl;
+    tempAud.addEventListener('loadedmetadata', function() {
+      var m = Math.floor(tempAud.duration/60), s = Math.floor(tempAud.duration%60);
+      var durEl = g('et-dur-'+id); if (durEl) durEl.value = m+':'+(s<10?'0':'')+s;
+      URL.revokeObjectURL(tempUrl);
+    });
+    var path = 'tracks/'+Date.now()+'-'+sanitize(file.name);
+    g('et-audio-label-'+id).textContent = file.name;
+    try {
+      if (!editUploads[id]) editUploads[id] = {};
+      editUploads[id].audio_url = await uploadToStorage('audio', path, file,
+        'et-audio-prog-'+id, 'et-audio-fill-'+id, 'et-audio-plabel-'+id,
+        'et-audio-ok-'+id, 'et-audio-err-'+id);
+    } catch(e) { console.error('edit audio upload failed', e); }
+  }
+
+  async function handleEditArtUpload(input, id) {
+    var file = input.files[0]; if (!file) return;
+    var path = 'artwork/'+Date.now()+'-'+sanitize(file.name);
+    g('et-art-label-'+id).textContent = file.name;
+    try {
+      if (!editUploads[id]) editUploads[id] = {};
+      editUploads[id].artwork_url = await uploadToStorage('audio', path, file,
+        'et-art-prog-'+id, 'et-art-fill-'+id, 'et-art-plabel-'+id,
+        'et-art-ok-'+id, 'et-art-err-'+id);
+    } catch(e) { console.error('edit art upload failed', e); }
+  }
+
   async function saveEdit(id) {
     var btn = g('esb-'+id);
     btn.disabled = true; btn.textContent = 'saving...';
+    var uploads = editUploads[id] || {};
     var payload = {
       title:    g('et-title-'+id).value.trim(),
       year:     g('et-year-'+id).value.trim() || null,
@@ -1099,6 +1160,8 @@
       credits:  g('et-credits-'+id).value.trim() || null,
       status:   g('et-status-'+id).value || 'active'
     };
+    if (uploads.audio_url)   payload.audio_url   = uploads.audio_url;
+    if (uploads.artwork_url) payload.artwork_url  = uploads.artwork_url;
     console.log('saving payload:', JSON.stringify(payload));
     try {
       var res = await fetch(SB_URL + '/rest/v1/tracks?id=eq.'+id, {
