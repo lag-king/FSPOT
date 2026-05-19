@@ -216,7 +216,30 @@
   .icon-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
   .icon-btn.danger:hover { background: rgba(160,48,48,0.1); color: var(--red); }
 
-  /* edit drawer */
+  /* ── UPDATES ── */
+  .upd-card { background: var(--paper-mid); border: 0.5px solid var(--paper-deep); border-radius: 10px; overflow: hidden; margin-bottom: 12px; cursor: pointer; transition: opacity 0.1s; }
+  .upd-card:active { opacity: 0.7; }
+  .upd-card-img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: var(--paper-deep); }
+  .upd-card-body { padding: 12px 14px 14px; }
+  .upd-card-date { font-size: 9px; font-family: 'Inter', sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 5px; }
+  .upd-card-title { font-size: 14px; font-weight: 400; color: var(--ink); letter-spacing: -0.02em; line-height: 1.3; margin-bottom: 5px; }
+  .upd-card-preview { font-size: 12px; color: var(--ink-mid); line-height: 1.55; font-family: 'Inter', sans-serif; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* update post full panel */
+  .up-img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+  .up-content { padding: 20px 24px 40px; }
+  .up-date { font-size: 9px; font-family: 'Inter', sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 8px; }
+  .up-title { font-size: 20px; font-weight: 400; color: var(--ink); letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 14px; }
+  .up-body { font-size: 13px; color: var(--ink-mid); line-height: 1.8; font-family: 'Inter', sans-serif; white-space: pre-line; }
+
+  /* admin post manage row */
+  .upd-manage-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--paper-mid); }
+  .upd-manage-row:last-child { border-bottom: none; }
+  .upd-manage-info { flex: 1; min-width: 0; }
+  .upd-manage-title { font-size: 12px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; }
+  .upd-manage-meta { font-size: 10px; color: var(--ink-faint); font-family: 'Inter', sans-serif; }
+  .pin-badge { font-size: 9px; font-family: 'Inter', sans-serif; letter-spacing: 0.06em; background: rgba(184,111,46,0.15); color: var(--amber); border: 0.5px solid rgba(184,111,46,0.3); border-radius: 10px; padding: 1px 7px; margin-left: 6px; vertical-align: middle; }
+
   .edit-drawer { background: var(--paper-mid); border: 0.5px solid var(--paper-deep); border-radius: 10px; padding: 14px; margin-top: 4px; display: none; }
   .edit-drawer.open { display: block; }
   .edit-save-btn { width: 100%; background: var(--amber); color: #fff; border: none; border-radius: 6px; padding: 10px; font-size: 12px; font-family: 'DM Sans', sans-serif; cursor: pointer; margin-top: 6px; }
@@ -258,6 +281,15 @@
       <div class="avatar-btn" onclick="openProfile()">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
       </div>
+    </div>
+  </div>
+
+  <!-- PINNED UPDATE BANNER -->
+  <div id="pinned-banner" style="display:none; padding: 9px 24px 9px; background: var(--paper-mid); border-bottom: 0.5px solid var(--paper-deep); cursor: pointer; flex-shrink: 0;" onclick="openPinnedPost()">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--amber);flex-shrink:0;display:block;"></span>
+      <span id="pinned-banner-text" style="font-size:12px;color:var(--ink);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-0.01em;"></span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink-light)" stroke-width="1.5" stroke-linecap="round" style="flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>
     </div>
   </div>
 
@@ -307,12 +339,9 @@
 
     <!-- UPDATES -->
     <div class="page" id="page-updates">
-      <div class="coming-soon">
-        <div class="cs-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-        <div class="cs-title">updates</div>
-        <div class="cs-sub">show dates, city requests, news and announcements — coming soon.</div>
-        <div class="cs-pill"><span class="cs-dot"></span>in progress</div>
-      </div>
+      <div id="updates-loading" class="state-row"><div class="spinner"></div><p>loading...</p></div>
+      <div id="updates-list" style="padding: 16px 24px 0;"></div>
+      <div id="updates-empty" class="state-row" style="display:none"><p>nothing yet — check back soon.</p></div>
     </div>
 
     <!-- COMMUNITY -->
@@ -365,7 +394,17 @@
   </div>
 
   <!-- track detail rendered dynamically -->
-    <!-- ── PROFILE PANEL ── -->
+    <!-- ── UPDATE POST PANEL ── -->
+  <div class="side-panel" id="update-post-panel">
+    <div class="sp-header">
+      <span class="sp-title" id="up-panel-title">update</span>
+      <button class="close-btn" onclick="closeUpdatePost()"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div id="up-panel-body" style="overflow-y:auto; flex:1;">
+    </div>
+  </div>
+
+  <!-- ── PROFILE PANEL ── -->
   <div class="side-panel" id="profile-panel">
     <div class="sp-header"><span class="sp-title">your profile</span><button class="close-btn" onclick="closeProfile()"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
     <div class="sp-body">
@@ -403,6 +442,7 @@
       <div class="admin-tabs">
         <div class="atab active" data-atab="upload">upload</div>
         <div class="atab" data-atab="manage">manage</div>
+        <div class="atab" data-atab="updates">updates</div>
       </div>
 
       <!-- UPLOAD TAB -->
@@ -518,6 +558,57 @@
       <div class="atab-panel" id="atab-manage">
         <div class="sp-sec-label">all tracks</div>
         <div id="manage-list"><div class="state-row"><div class="spinner"></div></div></div>
+      </div>
+
+      <!-- UPDATES ADMIN TAB -->
+      <div class="atab-panel" id="atab-updates">
+        <div class="form-msg ok" id="upd-form-ok">✓ post saved</div>
+        <div class="form-msg err" id="upd-form-err">something went wrong</div>
+
+        <div class="fg">
+          <label class="fl">title</label>
+          <input class="fi" type="text" id="upd-title" placeholder="new single out now">
+        </div>
+
+        <div class="fg">
+          <label class="fl">body</label>
+          <textarea class="fi fta" id="upd-body" placeholder="write your update here..." style="min-height:120px;"></textarea>
+        </div>
+
+        <div class="fg">
+          <label class="fl">image</label>
+          <div class="upload-zone" id="upd-img-zone">
+            <input type="file" accept="image/*" id="upd-img-input" onchange="handleUpdateImageUpload(this)">
+            <div class="upload-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div class="upload-label" id="upd-img-label">tap to upload image</div>
+            <div class="upload-hint">jpg, png, webp — optional</div>
+            <div class="upload-progress" id="upd-img-prog"><div class="upload-progress-bar"><div class="upload-progress-fill" id="upd-img-fill"></div></div><div class="upload-progress-label" id="upd-img-plabel">uploading...</div></div>
+            <div class="upload-success" id="upd-img-ok">✓ image uploaded</div>
+            <div class="upload-error" id="upd-img-err">upload failed</div>
+          </div>
+        </div>
+
+        <div class="fg" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 4px;">
+          <span style="font-size:12px;color:var(--ink);font-weight:400;">pin to banner</span>
+          <div id="upd-pin-toggle" onclick="togglePinNew()" style="width:40px;height:22px;border-radius:11px;background:var(--paper-deep);border:0.5px solid var(--paper-deeper);cursor:pointer;position:relative;transition:background 0.2s;" data-on="false">
+            <div style="position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:var(--paper);transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.15);" id="upd-pin-knob"></div>
+          </div>
+        </div>
+        <div class="fhint" style="margin-bottom:14px;">pinned post shows as a banner on the music page. only one post can be pinned at a time.</div>
+
+        <div class="fg">
+          <label class="fl">status</label>
+          <select class="fi fsel" id="upd-status">
+            <option value="published">published</option>
+            <option value="draft">draft</option>
+          </select>
+        </div>
+
+        <button class="submit-btn" id="upd-submit-btn" onclick="submitUpdate()">post update</button>
+
+        <div style="height:1px;background:var(--paper-deep);margin:24px 0 16px;"></div>
+        <div class="sp-sec-label">all posts</div>
+        <div id="upd-manage-list"><div class="state-row"><div class="spinner"></div></div></div>
       </div>
 
     </div>
@@ -829,6 +920,11 @@
   function switchTab(tab) {
     document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab===tab); });
     document.querySelectorAll('.page').forEach(function(p){ p.classList.toggle('active', p.id==='page-'+tab); });
+    // show pinned banner only on music page
+    var banner = g('pinned-banner');
+    if (banner && pinnedPost) {
+      banner.style.display = tab === 'music' ? 'block' : 'none';
+    }
   }
 
   document.querySelectorAll('.mtab').forEach(function(t){
@@ -1187,7 +1283,225 @@
   function esc(s)     { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function sanitize(s){ return s.replace(/[^a-zA-Z0-9.\-_]/g,'-'); }
 
+  // ────────────────────────────────────────────────
+  // UPDATES
+  // ────────────────────────────────────────────────
+  var updates = [];
+  var pinnedPost = null;
+  var uploadedUpdateImageUrl = null;
+  var newPostPinned = false;
+
+  async function loadUpdates() {
+    try {
+      var res = await fetch(SB_URL + '/rest/v1/updates?select=*&order=created_at.desc', {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+      });
+      if (!res.ok) throw new Error();
+      updates = await res.json();
+
+      var published = updates.filter(function(u){ return u.status === 'published'; });
+      pinnedPost = published.find(function(u){ return u.pinned; }) || null;
+
+      renderPinnedBanner();
+      renderUpdatesList(published);
+      renderUpdatesManageList(updates);
+    } catch(e) {
+      console.error('loadUpdates failed', e);
+    }
+  }
+
+  function renderPinnedBanner() {
+    var banner = g('pinned-banner');
+    if (pinnedPost) {
+      g('pinned-banner-text').textContent = pinnedPost.title;
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  function renderUpdatesList(data) {
+    hide('updates-loading');
+    var list = g('updates-list');
+    list.innerHTML = '';
+    if (!data.length) { show('updates-empty'); return; }
+    data.forEach(function(u) {
+      var card = document.createElement('div');
+      card.className = 'upd-card';
+      var imgHtml = u.image_url ? '<img class="upd-card-img" src="'+esc(u.image_url)+'" alt="">' : '';
+      var preview = (u.body||'').substring(0,120) + ((u.body||'').length > 120 ? '…' : '');
+      card.innerHTML =
+        imgHtml +
+        '<div class="upd-card-body">'+
+          '<div class="upd-card-date">'+fmtDate(u.created_at)+'</div>'+
+          '<div class="upd-card-title">'+esc(u.title)+'</div>'+
+          (preview ? '<div class="upd-card-preview">'+esc(preview)+'</div>' : '')+
+        '</div>';
+      card.addEventListener('click', function(){ openUpdatePost(u); });
+      list.appendChild(card);
+    });
+  }
+
+  function openPinnedPost() {
+    if (pinnedPost) openUpdatePost(pinnedPost);
+  }
+
+  function openUpdatePost(u) {
+    g('up-panel-title').textContent = 'update';
+    var body = g('up-panel-body');
+    var imgHtml = u.image_url ? '<img class="up-img" src="'+esc(u.image_url)+'" alt="">' : '';
+    body.innerHTML =
+      imgHtml +
+      '<div class="up-content">'+
+        '<div class="up-date">'+fmtDate(u.created_at)+'</div>'+
+        '<div class="up-title">'+esc(u.title)+'</div>'+
+        '<div class="up-body">'+esc(u.body||'')+'</div>'+
+      '</div>';
+    g('update-post-panel').classList.add('open');
+  }
+
+  function closeUpdatePost() {
+    g('update-post-panel').classList.remove('open');
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    var months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+    return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+  }
+
+  // ── Admin: new post pin toggle ──
+  function togglePinNew() {
+    newPostPinned = !newPostPinned;
+    var tog = g('upd-pin-toggle');
+    var knob = g('upd-pin-knob');
+    if (newPostPinned) {
+      tog.style.background = 'var(--amber)';
+      knob.style.transform = 'translateX(18px)';
+    } else {
+      tog.style.background = 'var(--paper-deep)';
+      knob.style.transform = 'translateX(0)';
+    }
+  }
+
+  async function handleUpdateImageUpload(input) {
+    var file = input.files[0]; if (!file) return;
+    var path = 'updates/' + Date.now() + '-' + sanitize(file.name);
+    g('upd-img-label').textContent = file.name;
+    try {
+      uploadedUpdateImageUrl = await uploadToStorage('audio', path, file,
+        'upd-img-prog','upd-img-fill','upd-img-plabel','upd-img-ok','upd-img-err');
+    } catch(e) { uploadedUpdateImageUrl = null; }
+  }
+
+  async function submitUpdate() {
+    var title = g('upd-title').value.trim();
+    if (!title) { alert('please enter a title'); return; }
+    var btn = g('upd-submit-btn');
+    btn.disabled = true; btn.textContent = 'saving...';
+    hide('upd-form-ok'); hide('upd-form-err');
+
+    // if pinning this, un-pin any existing pinned posts first
+    if (newPostPinned) {
+      try {
+        await fetch(SB_URL + '/rest/v1/updates?pinned=eq.true', {
+          method: 'PATCH',
+          headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pinned: false })
+        });
+      } catch(e) { /* continue */ }
+    }
+
+    var payload = {
+      title:     title,
+      body:      g('upd-body').value.trim() || null,
+      image_url: uploadedUpdateImageUrl || null,
+      pinned:    newPostPinned,
+      status:    g('upd-status').value
+    };
+
+    try {
+      var res = await fetch(SB_URL + '/rest/v1/updates', {
+        method: 'POST',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error((await res.text()));
+      show('upd-form-ok');
+      g('upd-title').value = '';
+      g('upd-body').value = '';
+      g('upd-img-label').textContent = 'tap to upload image';
+      uploadedUpdateImageUrl = null;
+      hide('upd-img-ok');
+      newPostPinned = false;
+      g('upd-pin-toggle').style.background = 'var(--paper-deep)';
+      g('upd-pin-knob').style.transform = 'translateX(0)';
+      loadUpdates();
+    } catch(e) {
+      var errDiv = g('upd-form-err');
+      errDiv.textContent = 'error: ' + e.message;
+      show('upd-form-err');
+    }
+    btn.disabled = false; btn.textContent = 'post update';
+  }
+
+  function renderUpdatesManageList(data) {
+    var list = g('upd-manage-list'); if (!list) return;
+    list.innerHTML = '';
+    if (!data.length) { list.innerHTML = '<div class="state-row"><p>no posts yet.</p></div>'; return; }
+    data.forEach(function(u) {
+      var wrap = document.createElement('div');
+      var pinBadge = u.pinned ? '<span class="pin-badge">pinned</span>' : '';
+      var draftBadge = u.status === 'draft' ? '<span style="font-size:9px;color:var(--ink-faint);margin-left:5px;font-family:Inter,sans-serif;">draft</span>' : '';
+      wrap.innerHTML =
+        '<div class="upd-manage-row">'+
+          '<div class="upd-manage-info">'+
+            '<div class="upd-manage-title">'+esc(u.title)+pinBadge+draftBadge+'</div>'+
+            '<div class="upd-manage-meta">'+fmtDate(u.created_at)+'</div>'+
+          '</div>'+
+          '<div class="manage-actions">'+
+            '<button class="icon-btn" onclick="toggleUpdatePin(\''+u.id+'\','+u.pinned+')" title="'+(u.pinned?'unpin':'pin')+'">'+
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>'+
+            '</button>'+
+            '<button class="icon-btn danger" onclick="deleteUpdate(\''+u.id+'\')" title="delete"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>'+
+          '</div>'+
+        '</div>';
+      list.appendChild(wrap);
+    });
+  }
+
+  async function toggleUpdatePin(id, currentlyPinned) {
+    // unpin all, then pin this one if it wasn't pinned
+    try {
+      await fetch(SB_URL + '/rest/v1/updates?pinned=eq.true', {
+        method: 'PATCH',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pinned: false })
+      });
+      if (!currentlyPinned) {
+        await fetch(SB_URL + '/rest/v1/updates?id=eq.'+id, {
+          method: 'PATCH',
+          headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pinned: true })
+        });
+      }
+      loadUpdates();
+    } catch(e) { alert('pin failed'); }
+  }
+
+  async function deleteUpdate(id) {
+    if (!confirm('delete this post? this cannot be undone.')) return;
+    try {
+      await fetch(SB_URL + '/rest/v1/updates?id=eq.'+id, {
+        method: 'DELETE', headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+      });
+      loadUpdates();
+    } catch(e) { alert('delete failed'); }
+  }
+
   loadTracks();
+  loadUpdates();
 </script>
 </body>
 </html>
