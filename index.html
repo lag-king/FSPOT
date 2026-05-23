@@ -1686,10 +1686,8 @@
     if (!data.length) { list.innerHTML = '<div class="state-row"><p>no tracks yet.</p></div>'; return; }
 
     var folders = [
-      { key: 'songs',  label: 'songs',        types: ['audio'] },
-      { key: 'videos', label: 'music videos',  types: ['video'] },
-      { key: 'live',   label: 'live',          types: ['live']  },
-      { key: 'demos',  label: 'demos',         types: ['demo']  }
+      { key: 'songs',  label: 'songs',  types: ['audio'] },
+      { key: 'demos',  label: 'demos',  types: ['demo']  }
     ];
 
     folders.forEach(function(folder) {
