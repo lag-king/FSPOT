@@ -216,6 +216,18 @@
   .icon-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
   .icon-btn.danger:hover { background: rgba(160,48,48,0.1); color: var(--red); }
 
+  /* ── DEMO ROWS ── */
+  .demo-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 0.5px solid var(--paper-mid); cursor: pointer; transition: opacity 0.1s; }
+  .demo-row:last-child { border-bottom: none; }
+  .demo-row:active { opacity: 0.6; }
+  .demo-num { width: 18px; text-align: center; font-size: 11px; color: var(--ink-faint); font-family: 'Inter', sans-serif; flex-shrink: 0; }
+  .demo-waveform { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 2px; }
+  .demo-waveform span { display: block; width: 3px; border-radius: 2px; background: var(--paper-deeper); }
+  .demo-row.playing .demo-waveform span { background: var(--amber); }
+  .demo-title { flex: 1; font-size: 13px; font-weight: 400; color: var(--ink); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .demo-row.playing .demo-title { color: var(--amber); }
+  .demo-dur { font-size: 11px; color: var(--ink-faint); font-family: 'Inter', sans-serif; flex-shrink: 0; }
+
   /* ── UPDATES ── */
   .upd-card { background: var(--paper-mid); border: 0.5px solid var(--paper-deep); border-radius: 10px; overflow: hidden; margin-bottom: 12px; cursor: pointer; transition: opacity 0.1s; }
   .upd-card:active { opacity: 0.7; }
@@ -301,6 +313,7 @@
         <div class="mtab active" data-mtab="songs">songs</div>
         <div class="mtab" data-mtab="videos">music videos</div>
         <div class="mtab" data-mtab="live">live</div>
+        <div class="mtab" data-mtab="demos">demos</div>
       </div>
       <div class="music-content">
 
@@ -332,6 +345,16 @@
             <div id="live-list"></div>
           </div>
           <div id="live-error" class="state-row" style="display:none"><p>no live performances yet.</p></div>
+        </div>
+
+        <!-- DEMOS -->
+        <div class="mpanel" id="mpanel-demos">
+          <div id="demos-loading" class="state-row"><div class="spinner"></div><p>loading...</p></div>
+          <div id="demos-content" style="display:none">
+            <div class="sec-label">works in progress</div>
+            <div id="demos-list"></div>
+          </div>
+          <div id="demos-error" class="state-row" style="display:none"><p>no demos yet.</p></div>
         </div>
 
       </div>
@@ -462,6 +485,7 @@
               <option value="audio">song</option>
               <option value="video">music video</option>
               <option value="live">live</option>
+              <option value="demo">demo</option>
             </select>
           </div>
           <div class="fg">
@@ -644,7 +668,8 @@
       var songs  = data.filter(function(t){ return t.type === 'audio'; });
       var videos = data.filter(function(t){ return t.type === 'video'; });
       var live   = data.filter(function(t){ return t.type === 'live'; });
-      console.log('songs:', songs.length, 'videos:', videos.length, 'live:', live.length);
+      var demos  = data.filter(function(t){ return t.type === 'demo'; });
+      console.log('songs:', songs.length, 'videos:', videos.length, 'live:', live.length, 'demos:', demos.length);
 
       try {
         renderSongs(songs);
@@ -656,6 +681,7 @@
       }
       renderVideoSection('videos', videos);
       renderVideoSection('live', live);
+      renderDemos(demos);
       renderManageList(data);
       populateReleaseNames(data);
     } catch(e) {
@@ -734,10 +760,72 @@
   }
 
   // ────────────────────────────────────────────────
+  // DEMOS
+  // ────────────────────────────────────────────────
+  var demos = [], currentDemoIdx = -1, demoMode = false;
+
+  function waveBar(h) {
+    return '<span style="height:'+h+'px;"></span>';
+  }
+
+  function renderDemos(data) {
+    hide('demos-loading');
+    var visible = data.filter(function(t){ return t.status !== 'inactive'; });
+    if (!visible.length) { show('demos-error'); return; }
+    demos = visible;
+    var list = g('demos-list'); list.innerHTML = '';
+    visible.forEach(function(t, i) {
+      var row = document.createElement('div');
+      row.className = 'demo-row';
+      row.id = 'drow-' + i;
+      row.innerHTML =
+        '<span class="demo-num" id="dnum-'+i+'">'+(i+1)+'</span>'+
+        '<div class="demo-waveform" id="dwav-'+i+'">'+
+          waveBar(8)+waveBar(14)+waveBar(10)+waveBar(18)+waveBar(12)+waveBar(16)+waveBar(9)+
+        '</div>'+
+        '<span class="demo-title">'+esc(t.title)+'</span>'+
+        '<span class="demo-dur">'+( t.duration || '—' )+'</span>';
+      row.addEventListener('click', function(){ playDemo(i); });
+      list.appendChild(row);
+    });
+    show('demos-content');
+  }
+
+  function playDemo(idx) {
+    demoMode = true;
+    currentDemoIdx = idx;
+    var t = demos[idx];
+    // update player UI
+    g('p-track-name').textContent = t.title;
+    g('p-band-name').textContent  = 'demo · as night calls';
+    var thumb = g('p-thumb');
+    var ei = thumb.querySelector('img'); if (ei) ei.remove();
+    // demo thumb — just the waveform rings, no artwork
+    audio.src = t.audio_url || ''; audio.load(); audio.play();
+    g('prog-fill').style.width = '0%';
+    g('p-time').textContent = '0:00';
+    // highlight row
+    document.querySelectorAll('.demo-row').forEach(function(r, i) {
+      r.classList.toggle('playing', i === idx);
+      var n = g('dnum-'+i); if (!n) return;
+      n.innerHTML = i === idx
+        ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="var(--amber)"><polygon points="5,3 19,12 5,21"/></svg>'
+        : (i+1);
+    });
+    // de-highlight songs rows
+    document.querySelectorAll('.track-row').forEach(function(r){ r.classList.remove('playing'); });
+    document.querySelectorAll('[id^="tnum-"]').forEach(function(n, i){ n.innerHTML = (i+1); });
+  }
+
+  function prevDemoTrack() { if (!demos.length) return; playDemo(currentDemoIdx > 0 ? currentDemoIdx - 1 : demos.length - 1); }
+  function nextDemoTrack() { if (!demos.length) return; playDemo(currentDemoIdx < demos.length - 1 ? currentDemoIdx + 1 : 0); }
+
+  // ────────────────────────────────────────────────
   // PLAYBACK
   // ────────────────────────────────────────────────
   function setPlayerTrack(idx) {
     if (!tracks.length) return;
+    demoMode = false;
     currentIdx = idx;
     var t = tracks[idx];
     g('p-track-name').textContent = t.title;
@@ -753,13 +841,18 @@
       var n = g('tnum-'+i); if (!n) return;
       n.innerHTML = i===idx ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="var(--amber)"><polygon points="5,3 19,12 5,21"/></svg>' : (i+1);
     });
+    // clear demo highlights
+    document.querySelectorAll('.demo-row').forEach(function(r,i){
+      r.classList.remove('playing');
+      var n = g('dnum-'+i); if (n) n.innerHTML = (i+1);
+    });
     updateDetailUI(t);
   }
 
-  function playTrack(idx) { setPlayerTrack(idx); audio.play(); }
-  function togglePlay()   { if (!tracks.length) return; audio.paused ? audio.play() : audio.pause(); }
-  function prevTrack()    { if (!tracks.length) return; playTrack(currentIdx>0?currentIdx-1:tracks.length-1); }
-  function nextTrack()    { if (!tracks.length) return; playTrack(currentIdx<tracks.length-1?currentIdx+1:0); }
+  function playTrack(idx) { demoMode = false; setPlayerTrack(idx); audio.play(); }
+  function togglePlay()   { if (!tracks.length && !demos.length) return; audio.paused ? audio.play() : audio.pause(); }
+  function prevTrack()    { if (demoMode) { prevDemoTrack(); return; } if (!tracks.length) return; playTrack(currentIdx>0?currentIdx-1:tracks.length-1); }
+  function nextTrack()    { if (demoMode) { nextDemoTrack(); return; } if (!tracks.length) return; playTrack(currentIdx<tracks.length-1?currentIdx+1:0); }
 
   audio.addEventListener('play',  function(){ setPlayUI(true); });
   audio.addEventListener('pause', function(){ setPlayUI(false); });
@@ -991,8 +1084,26 @@
   function onTypeChange() {
     var type = g('f-type').value;
     var isAudio = type === 'audio';
-    g('audio-upload-group').style.display = isAudio ? 'block' : 'none';
-    g('youtube-group').style.display      = isAudio ? 'none'  : 'block';
+    var isDemo  = type === 'demo';
+    g('audio-upload-group').style.display = (isAudio || isDemo) ? 'block' : 'none';
+    g('youtube-group').style.display      = (isAudio || isDemo) ? 'none'  : 'block';
+    // hide artwork and release fields for demos
+    var artGroup = g('audio-upload-group').parentElement.querySelector('#art-zone') ? g('audio-upload-group').nextElementSibling : null;
+    // simpler: find by looking up the art fg block
+    document.querySelectorAll('#atab-upload .fg').forEach(function(fg) {
+      var lbl = fg.querySelector('.fl');
+      if (!lbl) return;
+      var txt = lbl.textContent.trim().toLowerCase();
+      if (txt === 'artwork') fg.style.display = isDemo ? 'none' : 'block';
+      if (txt === 'release') fg.style.display = isDemo ? 'none' : 'block';
+      if (txt === 'order (1 = first)') fg.style.display = isDemo ? 'none' : 'block';
+      if (txt === 'lyrics') fg.style.display = isDemo ? 'none' : 'block';
+      if (txt === 'credits') fg.style.display = isDemo ? 'none' : 'block';
+    });
+    var releaseNameGroup = g('release-name-group');
+    if (releaseNameGroup) releaseNameGroup.style.display = isDemo ? 'none' : releaseNameGroup.style.display;
+    var releaseRow = document.querySelector('#atab-upload .fr');
+    if (releaseRow) releaseRow.style.display = isDemo ? 'none' : 'grid';
   }
 
   // ────────────────────────────────────────────────
@@ -1082,18 +1193,19 @@
     hide('form-ok'); hide('form-err');
 
     var type = g('f-type').value;
+    var isDemo = type === 'demo';
     var payload = {
       title:        title,
       type:         type,
-      release_type: g('f-release-type').value,
-      year:         g('f-year').value.trim() || null,
+      release_type: isDemo ? 'demo' : g('f-release-type').value,
+      year:         isDemo ? null : (g('f-year').value.trim() || null),
       duration:     g('f-duration').value.trim() || null,
       audio_url:    uploadedAudioUrl || null,
-      youtube_url:  g('f-youtube-url').value.trim() || null,
-      artwork_url:  uploadedArtUrl || null,
-      lyrics:       g('f-lyrics').value.trim() || null,
-      credits:      g('f-credits').value.trim() || null,
-      release_name: g('f-release-name').value.trim() || (g('f-release-name-new') && g('f-release-name-new').value.trim()) || null,
+      youtube_url:  isDemo ? null : (g('f-youtube-url').value.trim() || null),
+      artwork_url:  isDemo ? null : (uploadedArtUrl || null),
+      lyrics:       isDemo ? null : (g('f-lyrics').value.trim() || null),
+      credits:      isDemo ? null : (g('f-credits').value.trim() || null),
+      release_name: isDemo ? null : (g('f-release-name').value.trim() || (g('f-release-name-new') && g('f-release-name-new').value.trim()) || null),
       status:       'active',
       order:        parseInt(g('f-order').value) || 99
     };
