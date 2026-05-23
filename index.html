@@ -2031,7 +2031,7 @@
     renderUpdatesPicker();
   }
 
-  function makeLatestItem(art, title, meta, value, configKey, selectedValue, onclick) {
+  function makeLatestItem(art, title, meta, value, configKey, selectedValue, list) {
     var item = document.createElement('div');
     item.className = 'latest-item' + (selectedValue === value ? ' selected' : '');
     item.innerHTML =
@@ -2041,28 +2041,46 @@
       '<div class="latest-item-info"><div class="latest-item-title">'+esc(title)+'</div><div class="latest-item-meta">'+esc(meta)+'</div></div>' +
       '<div class="latest-item-check"></div>';
     item.addEventListener('click', function() {
-      onclick(value, configKey, item.closest('.latest-picker-list'));
+      saveConfig(configKey, value).then(function() {
+        list.querySelectorAll('.latest-item').forEach(function(el){ el.classList.remove('selected'); });
+        item.classList.add('selected');
+        show('latest-ok');
+        setTimeout(function(){ hide('latest-ok'); }, 2000);
+        if (configKey === 'hero_songs')   renderSongsHero();
+        if (configKey === 'hero_videos')  renderVideoHero();
+        if (configKey === 'hero_live')    renderLiveHero();
+        if (configKey === 'hero_updates') { loadUpdates(); }
+      });
     });
     return item;
   }
 
-  async function selectLatest(value, configKey, list) {
-    await saveConfig(configKey, value);
-    list.querySelectorAll('.latest-item').forEach(function(el){ el.classList.remove('selected'); });
-    event.currentTarget.classList.add('selected');
-    show('latest-ok');
-    setTimeout(function(){ hide('latest-ok'); }, 2000);
-    // refresh the relevant hero
-    if (configKey === 'hero_songs')   renderSongsHero();
-    if (configKey === 'hero_videos')  renderVideoHero();
-    if (configKey === 'hero_live')    renderLiveHero();
-    if (configKey === 'hero_updates') renderUpdatesHero();
+  async function selectLatest(value, configKey, list) {} // no longer used directly
+
+  function makePickerSection(label, items) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:8px;border:0.5px solid var(--paper-deep);border-radius:8px;overflow:hidden;';
+    var hdr = document.createElement('div');
+    hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--paper-mid);cursor:pointer;user-select:none;';
+    hdr.innerHTML =
+      '<span style="font-size:11px;color:var(--ink);font-weight:400;">'+label+'</span>'+
+      '<span style="font-size:10px;color:var(--ink-faint);font-family:Inter,sans-serif;background:var(--paper-deep);border-radius:10px;padding:1px 7px;">'+items.length+'</span>';
+    var body = document.createElement('div');
+    body.style.display = 'none';
+    hdr.addEventListener('click', function(){
+      body.style.display = body.style.display === 'none' ? 'block' : 'none';
+    });
+    items.forEach(function(el){ body.appendChild(el); });
+    wrap.appendChild(hdr);
+    wrap.appendChild(body);
+    return wrap;
   }
 
   function renderSongsPicker() {
     var list = g('latest-songs-list'); list.innerHTML = '';
     var selected = appConfig['hero_songs'] || '';
-    // releases first
+
+    // releases
     var releaseMap = {};
     tracks.forEach(function(t) {
       var rn = (t.release_name||'').trim();
@@ -2071,14 +2089,18 @@
         if (!releaseMap[rn]) releaseMap[rn] = t;
       }
     });
-    Object.keys(releaseMap).forEach(function(rn) {
+    var releaseItems = Object.keys(releaseMap).map(function(rn) {
       var t = releaseMap[rn];
-      list.appendChild(makeLatestItem(t.artwork_url, rn, (t.year||'') + ' · ' + (t.release_type||''), 'release:'+rn, 'hero_songs', selected, selectLatest));
+      return makeLatestItem(t.artwork_url, rn, (t.year||'') + (t.year?' · ':'') + (t.release_type||''), 'release:'+rn, 'hero_songs', selected, list);
     });
+
     // individual tracks
-    tracks.forEach(function(t) {
-      list.appendChild(makeLatestItem(t.artwork_url, t.title, (t.release_type||'single') + (t.year?' · '+t.year:''), 'track:'+t.id, 'hero_songs', selected, selectLatest));
+    var trackItems = tracks.filter(function(t){ return t.type==='audio'; }).map(function(t) {
+      return makeLatestItem(t.artwork_url, t.title, (t.release_type||'single')+(t.year?' · '+t.year:''), 'track:'+t.id, 'hero_songs', selected, list);
     });
+
+    if (releaseItems.length) list.appendChild(makePickerSection('releases — ep & album', releaseItems));
+    if (trackItems.length)   list.appendChild(makePickerSection('individual tracks', trackItems));
   }
 
   function renderVideosPicker() {
@@ -2088,7 +2110,7 @@
     if (!videos.length) { list.innerHTML = '<div style="font-size:11px;color:var(--ink-faint);font-family:Inter,sans-serif;">no videos yet.</div>'; return; }
     videos.forEach(function(t) {
       var thumb = t.youtube_url ? 'https://img.youtube.com/vi/'+t.youtube_url+'/mqdefault.jpg' : null;
-      list.appendChild(makeLatestItem(thumb, t.title, t.year||'', 'track:'+t.id, 'hero_videos', selected, selectLatest));
+      list.appendChild(makeLatestItem(thumb, t.title, t.year||'', 'track:'+t.id, 'hero_videos', selected, list));
     });
   }
 
@@ -2099,7 +2121,7 @@
     if (!live.length) { list.innerHTML = '<div style="font-size:11px;color:var(--ink-faint);font-family:Inter,sans-serif;">no live videos yet.</div>'; return; }
     live.forEach(function(t) {
       var thumb = t.youtube_url ? 'https://img.youtube.com/vi/'+t.youtube_url+'/mqdefault.jpg' : null;
-      list.appendChild(makeLatestItem(thumb, t.title, t.year||'', 'track:'+t.id, 'hero_live', selected, selectLatest));
+      list.appendChild(makeLatestItem(thumb, t.title, t.year||'', 'track:'+t.id, 'hero_live', selected, list));
     });
   }
 
@@ -2109,7 +2131,7 @@
     var published = updates.filter(function(u){ return u.status==='published'; });
     if (!published.length) { list.innerHTML = '<div style="font-size:11px;color:var(--ink-faint);font-family:Inter,sans-serif;">no posts yet.</div>'; return; }
     published.forEach(function(u) {
-      list.appendChild(makeLatestItem(u.image_url, u.title, fmtDate(u.created_at), u.id, 'hero_updates', selected, selectLatest));
+      list.appendChild(makeLatestItem(u.image_url, u.title, fmtDate(u.created_at), u.id, 'hero_updates', selected, list));
     });
   }
 
