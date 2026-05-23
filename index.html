@@ -252,6 +252,17 @@
   .upd-manage-meta { font-size: 10px; color: var(--ink-faint); font-family: 'Inter', sans-serif; }
   .pin-badge { font-size: 9px; font-family: 'Inter', sans-serif; letter-spacing: 0.06em; background: rgba(184,111,46,0.15); color: var(--amber); border: 0.5px solid rgba(184,111,46,0.3); border-radius: 10px; padding: 1px 7px; margin-left: 6px; vertical-align: middle; }
 
+  /* ── MANAGE FOLDERS ── */
+  .manage-folder { margin-bottom: 4px; }
+  .manage-folder-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px; background: var(--paper-mid); border: 0.5px solid var(--paper-deep); cursor: pointer; user-select: none; transition: background 0.15s; }
+  .manage-folder-header:active { background: var(--paper-deep); }
+  .folder-chevron { transition: transform 0.2s; color: var(--ink-faint); flex-shrink: 0; }
+  .manage-folder-header.open .folder-chevron { transform: rotate(90deg); }
+  .folder-icon { color: var(--ink-faint); display: flex; align-items: center; }
+  .folder-label { font-size: 12px; color: var(--ink); font-weight: 400; letter-spacing: -0.01em; }
+  .folder-count { font-size: 10px; color: var(--ink-faint); font-family: 'Inter', sans-serif; background: var(--paper-deep); border-radius: 10px; padding: 1px 7px; }
+  .manage-folder-body { padding: 4px 0 0 0; }
+
   .edit-drawer { background: var(--paper-mid); border: 0.5px solid var(--paper-deep); border-radius: 10px; padding: 14px; margin-top: 4px; display: none; }
   .edit-drawer.open { display: block; }
   .edit-save-btn { width: 100%; background: var(--amber); color: #fff; border: none; border-radius: 6px; padding: 10px; font-size: 12px; font-family: 'DM Sans', sans-serif; cursor: pointer; margin-top: 6px; }
@@ -1240,65 +1251,108 @@
   }
 
   // ────────────────────────────────────────────────
-  // MANAGE — list + edit + delete
+  // MANAGE — folders + list + edit + delete
   // ────────────────────────────────────────────────
+  var openFolders = { songs: true, videos: false, live: false, demos: false };
+
   function renderManageList(data) {
     var list = g('manage-list'); list.innerHTML = '';
     if (!data.length) { list.innerHTML = '<div class="state-row"><p>no tracks yet.</p></div>'; return; }
-    data.forEach(function(t) {
-      var wrap = document.createElement('div');
-      wrap.innerHTML =
-        '<div class="manage-row" id="mr-'+t.id+'">'+
-          '<div class="manage-thumb">'+(t.artwork_url?'<img src="'+t.artwork_url+'" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;">':'<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>')+'</div>'+
-          '<div class="manage-info"><div class="manage-name">'+esc(t.title)+'</div><div class="manage-type">'+t.type+' · #'+t.order+'</div></div>'+
-          '<div class="manage-actions">'+
-            '<button class="icon-btn" onclick="toggleEdit('+t.id+')" title="edit"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'+
-            '<button class="icon-btn danger" onclick="deleteTrack('+t.id+')" title="delete"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>'+
-          '</div>'+
+
+    var folders = [
+      { key: 'songs',  label: 'songs',        types: ['audio'] },
+      { key: 'videos', label: 'music videos',  types: ['video'] },
+      { key: 'live',   label: 'live',          types: ['live']  },
+      { key: 'demos',  label: 'demos',         types: ['demo']  }
+    ];
+
+    folders.forEach(function(folder) {
+      var items = data.filter(function(t){ return folder.types.indexOf(t.type) !== -1; });
+      var isOpen = openFolders[folder.key];
+
+      var section = document.createElement('div');
+      section.className = 'manage-folder';
+      section.id = 'mfolder-' + folder.key;
+
+      var header = document.createElement('div');
+      header.className = 'manage-folder-header' + (isOpen ? ' open' : '');
+      header.innerHTML =
+        '<div style="display:flex;align-items:center;gap:8px;">'+
+          '<svg class="folder-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>'+
+          '<span class="folder-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></span>'+
+          '<span class="folder-label">'+folder.label+'</span>'+
         '</div>'+
-        '<div class="edit-drawer" id="ed-'+t.id+'">'+
-          '<div class="fg"><label class="fl">title</label><input class="fi" id="et-title-'+t.id+'" value="'+esc(t.title)+'"></div>'+
-          '<div class="fr">'+
-            '<div class="fg"><label class="fl">year</label><input class="fi" id="et-year-'+t.id+'" value="'+(t.year||'')+'" placeholder="2025"></div>'+
-            '<div class="fg"><label class="fl">duration</label><input class="fi" id="et-dur-'+t.id+'" value="'+(t.duration||'')+'" placeholder="3:47"></div>'+
-          '</div>'+
-          '<div class="fg"><label class="fl">order</label><input class="fi" type="number" id="et-order-'+t.id+'" value="'+(t.order||99)+'"></div>'+
-          '<div class="fg"><label class="fl">status</label>'+
-            '<select class="fi fsel" id="et-status-'+t.id+'">' +
-              '<option value="active"'+(t.status==='active'?' selected':'')+'>active — visible to all</option>'+
-              '<option value="coming_soon"'+(t.status==='coming_soon'?' selected':'')+'>coming soon — teaser card</option>'+
-              '<option value="inactive"'+(t.status==='inactive'?' selected':'')+'>inactive — hidden</option>'+
-            '</select></div>'+
-          '<div class="fg"><label class="fl">lyrics</label><textarea class="fi fta" id="et-lyrics-'+t.id+'">'+esc(t.lyrics||'')+'</textarea></div>'+
-          '<div class="fg"><label class="fl">credits</label><textarea class="fi fta" id="et-credits-'+t.id+'">'+esc(t.credits||'')+'</textarea></div>'+
+        '<span class="folder-count">'+items.length+'</span>';
+      header.addEventListener('click', function() {
+        openFolders[folder.key] = !openFolders[folder.key];
+        header.classList.toggle('open', openFolders[folder.key]);
+        body.style.display = openFolders[folder.key] ? 'block' : 'none';
+      });
 
-          '<div class="fg"><label class="fl">audio file</label>'+
-            '<div class="upload-zone" style="position:relative;">'+
-              '<input type="file" accept="audio/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" onchange="handleEditAudioUpload(this,'+t.id+')">'+
-              '<div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>'+
-              '<div class="upload-label" id="et-audio-label-'+t.id+'">'+(t.audio_url ? '✓ has audio — tap to replace' : 'tap to upload audio')+'</div>'+
-              '<div class="upload-hint">mp3, wav, aac</div>'+
-              '<div class="upload-progress" id="et-audio-prog-'+t.id+'"><div class="upload-progress-bar"><div class="upload-progress-fill" id="et-audio-fill-'+t.id+'"></div></div><div class="upload-progress-label" id="et-audio-plabel-'+t.id+'">uploading...</div></div>'+
-              '<div class="upload-success" id="et-audio-ok-'+t.id+'">✓ audio updated</div>'+
-              '<div class="upload-error" id="et-audio-err-'+t.id+'">upload failed</div>'+
+      var body = document.createElement('div');
+      body.className = 'manage-folder-body';
+      body.style.display = isOpen ? 'block' : 'none';
+
+      if (!items.length) {
+        body.innerHTML = '<div style="padding:10px 14px 10px 36px;font-size:11px;color:var(--ink-faint);font-family:Inter,sans-serif;">nothing here yet.</div>';
+      } else {
+        items.forEach(function(t) {
+          var wrap = document.createElement('div');
+          wrap.innerHTML =
+            '<div class="manage-row" id="mr-'+t.id+'">'+
+              '<div class="manage-thumb">'+(t.artwork_url?'<img src="'+t.artwork_url+'" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;">':'<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>')+'</div>'+
+              '<div class="manage-info"><div class="manage-name">'+esc(t.title)+'</div><div class="manage-type">'+t.type+' · #'+t.order+'</div></div>'+
+              '<div class="manage-actions">'+
+                '<button class="icon-btn" onclick="toggleEdit('+t.id+')" title="edit"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'+
+                '<button class="icon-btn danger" onclick="deleteTrack('+t.id+')" title="delete"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>'+
+              '</div>'+
             '</div>'+
-          '</div>'+
+            '<div class="edit-drawer" id="ed-'+t.id+'">'+
+              '<div class="fg"><label class="fl">title</label><input class="fi" id="et-title-'+t.id+'" value="'+esc(t.title)+'"></div>'+
+              '<div class="fr">'+
+                '<div class="fg"><label class="fl">year</label><input class="fi" id="et-year-'+t.id+'" value="'+(t.year||'')+'" placeholder="2025"></div>'+
+                '<div class="fg"><label class="fl">duration</label><input class="fi" id="et-dur-'+t.id+'" value="'+(t.duration||'')+'" placeholder="3:47"></div>'+
+              '</div>'+
+              '<div class="fg"><label class="fl">order</label><input class="fi" type="number" id="et-order-'+t.id+'" value="'+(t.order||99)+'"></div>'+
+              '<div class="fg"><label class="fl">status</label>'+
+                '<select class="fi fsel" id="et-status-'+t.id+'">' +
+                  '<option value="active"'+(t.status==='active'?' selected':'')+'>active — visible to all</option>'+
+                  '<option value="coming_soon"'+(t.status==='coming_soon'?' selected':'')+'>coming soon — teaser card</option>'+
+                  '<option value="inactive"'+(t.status==='inactive'?' selected':'')+'>inactive — hidden</option>'+
+                '</select></div>'+
+              '<div class="fg"><label class="fl">lyrics</label><textarea class="fi fta" id="et-lyrics-'+t.id+'">'+esc(t.lyrics||'')+'</textarea></div>'+
+              '<div class="fg"><label class="fl">credits</label><textarea class="fi fta" id="et-credits-'+t.id+'">'+esc(t.credits||'')+'</textarea></div>'+
+              '<div class="fg"><label class="fl">audio file</label>'+
+                '<div class="upload-zone" style="position:relative;">'+
+                  '<input type="file" accept="audio/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" onchange="handleEditAudioUpload(this,'+t.id+')">'+
+                  '<div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>'+
+                  '<div class="upload-label" id="et-audio-label-'+t.id+'">'+(t.audio_url ? '✓ has audio — tap to replace' : 'tap to upload audio')+'</div>'+
+                  '<div class="upload-hint">mp3, wav, aac</div>'+
+                  '<div class="upload-progress" id="et-audio-prog-'+t.id+'"><div class="upload-progress-bar"><div class="upload-progress-fill" id="et-audio-fill-'+t.id+'"></div></div><div class="upload-progress-label" id="et-audio-plabel-'+t.id+'">uploading...</div></div>'+
+                  '<div class="upload-success" id="et-audio-ok-'+t.id+'">✓ audio updated</div>'+
+                  '<div class="upload-error" id="et-audio-err-'+t.id+'">upload failed</div>'+
+                '</div>'+
+              '</div>'+
+              '<div class="fg"><label class="fl">artwork</label>'+
+                '<div class="upload-zone" style="position:relative;">'+
+                  '<input type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" onchange="handleEditArtUpload(this,'+t.id+')">'+
+                  '<div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>'+
+                  '<div class="upload-label" id="et-art-label-'+t.id+'">'+(t.artwork_url ? '✓ has artwork — tap to replace' : 'tap to upload artwork')+'</div>'+
+                  '<div class="upload-hint">jpg, png, webp</div>'+
+                  '<div class="upload-progress" id="et-art-prog-'+t.id+'"><div class="upload-progress-bar"><div class="upload-progress-fill" id="et-art-fill-'+t.id+'"></div></div><div class="upload-progress-label" id="et-art-plabel-'+t.id+'">uploading...</div></div>'+
+                  '<div class="upload-success" id="et-art-ok-'+t.id+'">✓ artwork updated</div>'+
+                  '<div class="upload-error" id="et-art-err-'+t.id+'">upload failed</div>'+
+                '</div>'+
+              '</div>'+
+              '<button class="edit-save-btn" id="esb-'+t.id+'" onclick="saveEdit('+t.id+')">save changes</button>'+
+            '</div>';
+          body.appendChild(wrap);
+        });
+      }
 
-          '<div class="fg"><label class="fl">artwork</label>'+
-            '<div class="upload-zone" style="position:relative;">'+
-              '<input type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" onchange="handleEditArtUpload(this,'+t.id+')">'+
-              '<div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>'+
-              '<div class="upload-label" id="et-art-label-'+t.id+'">'+(t.artwork_url ? '✓ has artwork — tap to replace' : 'tap to upload artwork')+'</div>'+
-              '<div class="upload-hint">jpg, png, webp</div>'+
-              '<div class="upload-progress" id="et-art-prog-'+t.id+'"><div class="upload-progress-bar"><div class="upload-progress-fill" id="et-art-fill-'+t.id+'"></div></div><div class="upload-progress-label" id="et-art-plabel-'+t.id+'">uploading...</div></div>'+
-              '<div class="upload-success" id="et-art-ok-'+t.id+'">✓ artwork updated</div>'+
-              '<div class="upload-error" id="et-art-err-'+t.id+'">upload failed</div>'+
-            '</div>'+
-          '</div>'+
-
-          '<button class="edit-save-btn" id="esb-'+t.id+'" onclick="saveEdit('+t.id+')">save changes</button>'+
-        '</div>';
-      list.appendChild(wrap);
+      section.appendChild(header);
+      section.appendChild(body);
+      list.appendChild(section);
     });
   }
 
