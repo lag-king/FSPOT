@@ -569,6 +569,7 @@
     <div class="admin-body" id="admin-body">
       <div class="admin-tabs">
         <div class="atab active" data-atab="upload">upload</div>
+        <div class="atab" data-atab="videos">videos</div>
         <div class="atab" data-atab="manage">manage</div>
         <div class="atab" data-atab="updates">updates</div>
         <div class="atab" data-atab="latest">latest</div>
@@ -590,8 +591,6 @@
             <option value="audio_single">song — single</option>
             <option value="audio_ep">song — ep</option>
             <option value="audio_album">song — album</option>
-            <option value="video">music video</option>
-            <option value="live">live</option>
             <option value="demo">demo</option>
           </select>
         </div>
@@ -674,6 +673,47 @@
         </div>
 
         <button class="submit-btn" id="submit-btn" onclick="submitTrack()">save track</button>
+      </div>
+
+      <!-- VIDEOS TAB -->
+      <div class="atab-panel" id="atab-videos">
+        <div class="form-msg ok" id="vid-form-ok">✓ video saved</div>
+        <div class="form-msg err" id="vid-form-err">something went wrong</div>
+
+        <div class="fg">
+          <label class="fl">title</label>
+          <input class="fi" type="text" id="v-title" placeholder="follow me down (official video)">
+        </div>
+
+        <div class="fg">
+          <label class="fl">type</label>
+          <select class="fi fsel" id="v-type">
+            <option value="video">music video</option>
+            <option value="live">live</option>
+          </select>
+        </div>
+
+        <div class="fg">
+          <label class="fl">youtube video id</label>
+          <input class="fi" type="text" id="v-youtube" placeholder="26WMY_Ks58A">
+          <div class="fhint">paste only the video id — not the full url</div>
+        </div>
+
+        <div class="fg">
+          <label class="fl">year</label>
+          <input class="fi" type="text" id="v-year" placeholder="2025">
+        </div>
+
+        <div class="fg">
+          <label class="fl">order (1 = first)</label>
+          <input class="fi" type="number" id="v-order" placeholder="1">
+        </div>
+
+        <button class="submit-btn" id="vid-submit-btn" onclick="submitVideo()">save video</button>
+
+        <div style="height:1px;background:var(--paper-deep);margin:24px 0 16px;"></div>
+        <div class="sp-sec-label">all videos</div>
+        <div id="vid-manage-list"><div class="state-row"><div class="spinner"></div></div></div>
       </div>
 
       <!-- MANAGE TAB -->
@@ -793,10 +833,8 @@
       console.log('all tracks from supabase:', JSON.stringify(data.map(function(t){ return {id:t.id,title:t.title,type:t.type,status:t.status}; })));
       allTracks = data;
       var songs  = data.filter(function(t){ return t.type === 'audio'; });
-      var videos = data.filter(function(t){ return t.type === 'video'; });
-      var live   = data.filter(function(t){ return t.type === 'live'; });
       var demos  = data.filter(function(t){ return t.type === 'demo'; });
-      console.log('songs:', songs.length, 'videos:', videos.length, 'live:', live.length, 'demos:', demos.length);
+      console.log('songs:', songs.length, 'demos:', demos.length);
 
       try {
         renderSongs(songs);
@@ -806,13 +844,9 @@
         g('songs-error').style.display = 'block';
         g('songs-error').querySelector('p').textContent = 'render error: ' + e.message;
       }
-      renderVideoSection('videos', videos);
-      renderVideoSection('live', live);
       renderDemos(demos);
       renderManageList(data);
       populateReleaseNames(data);
-      renderVideoHero();
-      renderLiveHero();
       renderSongsHero();
     } catch(e) {
       ['songs','videos','live'].forEach(function(k){
@@ -970,25 +1004,190 @@
     return row;
   }
 
+  // ────────────────────────────────────────────────
+  // VIDEOS (separate table)
+  // ────────────────────────────────────────────────
+  var allVideos = [];
+
+  async function loadVideos() {
+    try {
+      var res = await fetch(SB_URL + '/rest/v1/videos?select=*&order=order.asc', {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+      });
+      if (!res.ok) throw new Error();
+      allVideos = await res.json();
+      var vids = allVideos.filter(function(v){ return v.type === 'video' && v.status !== 'inactive'; });
+      var live = allVideos.filter(function(v){ return v.type === 'live'  && v.status !== 'inactive'; });
+      renderVideoSection('videos', vids);
+      renderVideoSection('live', live);
+      renderVideoHero();
+      renderLiveHero();
+      renderVidManageList(allVideos);
+    } catch(e) {
+      console.error('loadVideos failed', e);
+      show('videos-error'); show('live-error');
+    }
+  }
+
   function renderVideoSection(key, data) {
     hide(key+'-loading');
     if (!data.length) { show(key+'-error'); return; }
     var list = g(key+'-list'); list.innerHTML = '';
-    data.forEach(function(t) {
+    data.forEach(function(v) {
       var card = document.createElement('div');
       card.className = 'video-card';
       card.innerHTML =
         '<div class="video-thumb">'+
-          (t.youtube_url ? '<img src="https://img.youtube.com/vi/'+t.youtube_url+'/hqdefault.jpg" alt="'+esc(t.title)+'">' : '')+
+          (v.youtube_url ? '<img src="https://img.youtube.com/vi/'+v.youtube_url+'/hqdefault.jpg" alt="'+esc(v.title)+'">' : '')+
           '<div class="play-circle"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>'+
         '</div>'+
-        '<div class="video-info"><div class="video-title">'+esc(t.title)+'</div><div class="video-meta">'+(t.release_type||key)+' · '+(t.year||'')+'</div></div>';
+        '<div class="video-info"><div class="video-title">'+esc(v.title)+'</div><div class="video-meta">'+(v.type||key)+' · '+(v.year||'')+'</div></div>';
       card.addEventListener('click', function(){
-        if (t.youtube_url) window.open('https://youtu.be/'+t.youtube_url,'_blank');
+        if (v.youtube_url) window.open('https://youtu.be/'+v.youtube_url,'_blank');
       });
       list.appendChild(card);
     });
     show(key+'-content');
+  }
+
+  // ── Video admin ──
+  async function submitVideo() {
+    var title = g('v-title').value.trim();
+    if (!title) { alert('please enter a title'); return; }
+    var btn = g('vid-submit-btn');
+    btn.disabled = true; btn.textContent = 'saving...';
+    hide('vid-form-ok'); hide('vid-form-err');
+    var payload = {
+      title:       title,
+      type:        g('v-type').value,
+      youtube_url: g('v-youtube').value.trim() || null,
+      year:        g('v-year').value.trim() || null,
+      order:       parseInt(g('v-order').value) || 99,
+      status:      'active'
+    };
+    try {
+      var res = await fetch(SB_URL + '/rest/v1/videos', {
+        method: 'POST',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(res.status + ': ' + await res.text());
+      show('vid-form-ok');
+      ['v-title','v-youtube','v-year','v-order'].forEach(function(id){ g(id).value=''; });
+      loadVideos();
+    } catch(e) {
+      g('vid-form-err').textContent = 'error: ' + e.message;
+      show('vid-form-err');
+    }
+    btn.disabled = false; btn.textContent = 'save video';
+  }
+
+  function renderVidManageList(data) {
+    var list = g('vid-manage-list'); if (!list) return;
+    list.innerHTML = '';
+    if (!data.length) { list.innerHTML = '<div class="state-row"><p>no videos yet.</p></div>'; return; }
+
+    var folders = [
+      { key: 'video', label: 'music videos' },
+      { key: 'live',  label: 'live' }
+    ];
+    folders.forEach(function(folder) {
+      var items = data.filter(function(v){ return v.type === folder.key; });
+      var section = document.createElement('div');
+      section.className = 'manage-folder';
+      var isOpen = folder.key === 'video';
+      var header = document.createElement('div');
+      header.className = 'manage-folder-header' + (isOpen ? ' open' : '');
+      header.innerHTML =
+        '<div style="display:flex;align-items:center;gap:8px;">'+
+          '<svg class="folder-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>'+
+          '<span class="folder-label">'+folder.label+'</span>'+
+        '</div>'+
+        '<span class="folder-count">'+items.length+'</span>';
+      var body = document.createElement('div');
+      body.className = 'manage-folder-body';
+      body.style.display = isOpen ? 'block' : 'none';
+      header.addEventListener('click', function(){
+        var open = body.style.display !== 'none';
+        body.style.display = open ? 'none' : 'block';
+        header.classList.toggle('open', !open);
+      });
+      if (!items.length) {
+        body.innerHTML = '<div style="padding:10px 14px;font-size:11px;color:var(--ink-faint);font-family:Inter,sans-serif;">nothing here yet.</div>';
+      } else {
+        items.forEach(function(v) {
+          var sid = v.id.replace(/-/g,'');
+          var wrap = document.createElement('div');
+          wrap.innerHTML =
+            '<div class="manage-row">'+
+              '<div class="manage-thumb" style="display:flex;align-items:center;justify-content:center;">'+
+                (v.youtube_url ? '<img src="https://img.youtube.com/vi/'+v.youtube_url+'/mqdefault.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;">' : '<svg viewBox="0 0 24 24" style="width:16px;height:16px;"><polygon points="5,3 19,12 5,21" fill="var(--ink-faint)"/></svg>')+
+              '</div>'+
+              '<div class="manage-info"><div class="manage-name">'+esc(v.title)+'</div><div class="manage-type">'+v.type+' · '+(v.year||'—')+'</div></div>'+
+              '<div class="manage-actions">'+
+                '<button class="icon-btn" onclick="toggleVidEdit(\''+sid+'\')" title="edit"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'+
+                '<button class="icon-btn danger" onclick="deleteVideo(\''+v.id+'\')" title="delete"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>'+
+              '</div>'+
+            '</div>'+
+            '<div class="edit-drawer" id="ved-'+sid+'">'+
+              '<div class="fg"><label class="fl">title</label><input class="fi" id="vet-title-'+sid+'" value="'+esc(v.title)+'"></div>'+
+              '<div class="fg"><label class="fl">type</label>'+
+                '<select class="fi fsel" id="vet-type-'+sid+'">'+
+                  '<option value="video"'+(v.type==='video'?' selected':'')+'>music video</option>'+
+                  '<option value="live"'+(v.type==='live'?' selected':'')+'>live</option>'+
+                '</select></div>'+
+              '<div class="fg"><label class="fl">youtube id</label><input class="fi" id="vet-yt-'+sid+'" value="'+(v.youtube_url||'')+'"></div>'+
+              '<div class="fr">'+
+                '<div class="fg"><label class="fl">year</label><input class="fi" id="vet-year-'+sid+'" value="'+(v.year||'')+'"></div>'+
+                '<div class="fg"><label class="fl">order</label><input class="fi" type="number" id="vet-order-'+sid+'" value="'+(v.order||99)+'"></div>'+
+              '</div>'+
+              '<div class="fg"><label class="fl">status</label>'+
+                '<select class="fi fsel" id="vet-status-'+sid+'">'+
+                  '<option value="active"'+(v.status==='active'?' selected':'')+'>active</option>'+
+                  '<option value="inactive"'+(v.status==='inactive'?' selected':'')+'>inactive</option>'+
+                '</select></div>'+
+              '<button class="edit-save-btn" id="vesb-'+sid+'" onclick="saveVideoEdit(\''+v.id+'\',\''+sid+'\')">save changes</button>'+
+            '</div>';
+          body.appendChild(wrap);
+        });
+      }
+      section.appendChild(header);
+      section.appendChild(body);
+      list.appendChild(section);
+    });
+  }
+
+  function toggleVidEdit(sid) { g('ved-'+sid).classList.toggle('open'); }
+
+  async function saveVideoEdit(id, sid) {
+    var btn = g('vesb-'+sid);
+    btn.disabled = true; btn.textContent = 'saving...';
+    var payload = {
+      title:       g('vet-title-'+sid).value.trim(),
+      type:        g('vet-type-'+sid).value,
+      youtube_url: g('vet-yt-'+sid).value.trim() || null,
+      year:        g('vet-year-'+sid).value.trim() || null,
+      order:       parseInt(g('vet-order-'+sid).value) || 99,
+      status:      g('vet-status-'+sid).value
+    };
+    try {
+      var res = await fetch(SB_URL + '/rest/v1/videos?id=eq.'+id, {
+        method: 'PATCH',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(res.status);
+      btn.textContent = '✓ saved';
+      setTimeout(function(){ loadVideos(); g('ved-'+sid).classList.remove('open'); }, 800);
+    } catch(e) { btn.disabled = false; btn.textContent = 'save changes'; alert('save failed: ' + e.message); }
+  }
+
+  async function deleteVideo(id) {
+    if (!confirm('delete this video?')) return;
+    await fetch(SB_URL + '/rest/v1/videos?id=eq.'+id, {
+      method: 'DELETE', headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    loadVideos();
   }
 
   // ────────────────────────────────────────────────
@@ -2105,22 +2304,22 @@
   function renderVideosPicker() {
     var list = g('latest-videos-list'); list.innerHTML = '';
     var selected = appConfig['hero_videos'] || '';
-    var videos = allTracks.filter(function(t){ return t.type==='video'; });
+    var videos = allVideos.filter(function(v){ return v.type==='video'; });
     if (!videos.length) { list.innerHTML = '<div style="font-size:11px;color:var(--ink-faint);font-family:Inter,sans-serif;">no videos yet.</div>'; return; }
-    videos.forEach(function(t) {
-      var thumb = t.youtube_url ? 'https://img.youtube.com/vi/'+t.youtube_url+'/mqdefault.jpg' : null;
-      list.appendChild(makeLatestItem(thumb, t.title, t.year||'', 'track:'+t.id, 'hero_videos', selected, list));
+    videos.forEach(function(v) {
+      var thumb = v.youtube_url ? 'https://img.youtube.com/vi/'+v.youtube_url+'/mqdefault.jpg' : null;
+      list.appendChild(makeLatestItem(thumb, v.title, v.year||'', v.id, 'hero_videos', selected, list));
     });
   }
 
   function renderLivePicker() {
     var list = g('latest-live-list'); list.innerHTML = '';
     var selected = appConfig['hero_live'] || '';
-    var live = allTracks.filter(function(t){ return t.type==='live'; });
+    var live = allVideos.filter(function(v){ return v.type==='live'; });
     if (!live.length) { list.innerHTML = '<div style="font-size:11px;color:var(--ink-faint);font-family:Inter,sans-serif;">no live videos yet.</div>'; return; }
-    live.forEach(function(t) {
-      var thumb = t.youtube_url ? 'https://img.youtube.com/vi/'+t.youtube_url+'/mqdefault.jpg' : null;
-      list.appendChild(makeLatestItem(thumb, t.title, t.year||'', 'track:'+t.id, 'hero_live', selected, list));
+    live.forEach(function(v) {
+      var thumb = v.youtube_url ? 'https://img.youtube.com/vi/'+v.youtube_url+'/mqdefault.jpg' : null;
+      list.appendChild(makeLatestItem(thumb, v.title, v.year||'', v.id, 'hero_live', selected, list));
     });
   }
 
@@ -2197,11 +2396,10 @@
   function renderMediaHero(key, val, type) {
     var existing = g(key+'-hero');
     if (existing) existing.remove();
-    if (!val || val.indexOf('track:') !== 0) return;
-    var tid = parseInt(val.slice(6));
-    var t = allTracks.find(function(t){ return t.id === tid; });
-    if (!t) return;
-    var thumb = t.youtube_url ? 'https://img.youtube.com/vi/'+t.youtube_url+'/hqdefault.jpg' : null;
+    if (!val) return;
+    var v = allVideos.find(function(v){ return v.id === val; });
+    if (!v) return;
+    var thumb = v.youtube_url ? 'https://img.youtube.com/vi/'+v.youtube_url+'/hqdefault.jpg' : null;
     var hero = document.createElement('div');
     hero.id = key+'-hero';
     hero.style.cssText = 'margin:16px 24px 16px; border-radius:12px; overflow:hidden; cursor:pointer; background:var(--paper-mid); border:0.5px solid var(--paper-deep); position:relative;';
@@ -2210,10 +2408,10 @@
              : '<div style="width:100%;aspect-ratio:16/9;background:var(--paper-deep);display:flex;align-items:center;justify-content:center;"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--ink-faint)" stroke-width="1"><polygon points="5,3 19,12 5,21"/></svg></div>')+
       '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(15,10,5,0.85) 0%,transparent 100%);padding:30px 14px 14px;">'+
         '<div style="font-size:9px;font-family:Inter,sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);margin-bottom:3px;">latest '+type+'</div>'+
-        '<div style="font-size:16px;font-weight:400;color:#EFE6D3;letter-spacing:-0.02em;">'+esc(t.title)+'</div>'+
+        '<div style="font-size:16px;font-weight:400;color:#EFE6D3;letter-spacing:-0.02em;">'+esc(v.title)+'</div>'+
       '</div>'+
       '<div style="position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;background:rgba(15,10,5,0.6);border:1px solid rgba(239,230,211,0.3);display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="#EFE6D3" style="margin-left:2px;"><polygon points="5,3 19,12 5,21"/></svg></div>';
-    hero.addEventListener('click', function(){ if (t.youtube_url) window.open('https://youtu.be/'+t.youtube_url,'_blank'); });
+    hero.addEventListener('click', function(){ if (v.youtube_url) window.open('https://youtu.be/'+v.youtube_url,'_blank'); });
     var content = g(key+'-content');
     if (content) content.prepend(hero);
   }
@@ -2242,6 +2440,7 @@
   async function init() {
     await loadConfig();
     loadTracks();
+    loadVideos();
     loadUpdates();
   }
   init();
