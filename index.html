@@ -230,8 +230,8 @@
 
   /* release scroll cards */
   #songs-releases-scroll::-webkit-scrollbar { display: none; }
-  .release-card { flex-shrink: 0; width: 110px; cursor: pointer; }
-  .release-card-art { width: 110px; height: 110px; border-radius: 8px; overflow: hidden; background: var(--paper-deep); border: 0.5px solid var(--paper-deeper); position: relative; margin-bottom: 7px; }
+  .release-card { width: 100%; cursor: pointer; }
+  .release-card-art { width: 100%; aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; background: var(--paper-deep); border: 0.5px solid var(--paper-deeper); position: relative; margin-bottom: 7px; }
   .release-card-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .release-card-art-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
   .release-card-art-placeholder svg { width: 28px; height: 28px; fill: none; stroke: var(--ink-faint); stroke-width: 1.2; }
@@ -268,6 +268,31 @@
   .demo-title { flex: 1; font-size: 13px; font-weight: 400; color: var(--ink); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .demo-row.playing .demo-title { color: var(--amber); }
   .demo-dur { font-size: 11px; color: var(--ink-faint); font-family: 'Inter', sans-serif; flex-shrink: 0; }
+
+  /* ── LATEST PICKER ── */
+  .latest-picker-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+  .latest-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; border: 0.5px solid var(--paper-deep); background: var(--paper-mid); cursor: pointer; transition: border-color 0.15s; }
+  .latest-item.selected { border-color: var(--amber); background: rgba(184,111,46,0.08); }
+  .latest-item-art { width: 38px; height: 38px; border-radius: 5px; background: var(--paper-deep); flex-shrink: 0; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
+  .latest-item-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .latest-item-art svg { width: 16px; height: 16px; fill: none; stroke: var(--ink-faint); stroke-width: 1.3; }
+  .latest-item-info { flex: 1; min-width: 0; }
+  .latest-item-title { font-size: 12px; color: var(--ink); font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .latest-item-meta { font-size: 10px; color: var(--ink-faint); font-family: 'Inter', sans-serif; }
+  .latest-item-check { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--paper-deeper); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .latest-item.selected .latest-item-check { background: var(--amber); border-color: var(--amber); }
+  .latest-item.selected .latest-item-check::after { content: ''; display: block; width: 5px; height: 5px; border-radius: 50%; background: #fff; }
+
+  /* updates hero card */
+  .upd-hero { margin: 16px 24px 16px; border-radius: 12px; overflow: hidden; cursor: pointer; background: var(--paper-mid); border: 0.5px solid var(--paper-deep); transition: opacity 0.1s; }
+  .upd-hero:active { opacity: 0.8; }
+  .upd-hero-img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: var(--paper-deep); }
+  .upd-hero-img-placeholder { width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, var(--paper-deep) 0%, var(--paper-deeper) 100%); display: flex; align-items: center; justify-content: center; }
+  .upd-hero-img-placeholder svg { width: 36px; height: 36px; fill: none; stroke: var(--ink-faint); stroke-width: 1; }
+  .upd-hero-body { padding: 12px 14px 14px; }
+  .upd-hero-label { font-size: 9px; font-family: 'Inter', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: 4px; }
+  .upd-hero-title { font-size: 16px; font-weight: 400; color: var(--ink); letter-spacing: -0.025em; line-height: 1.25; margin-bottom: 3px; }
+  .upd-hero-meta { font-size: 11px; color: var(--ink-light); font-family: 'Inter', sans-serif; }
 
   /* ── UPDATES ── */
   .upd-card { background: var(--paper-mid); border: 0.5px solid var(--paper-deep); border-radius: 10px; overflow: hidden; margin-bottom: 12px; cursor: pointer; transition: opacity 0.1s; }
@@ -387,7 +412,7 @@
               <div style="padding: 0 24px; margin-bottom: 12px; display:flex; align-items:center; justify-content:space-between;">
                 <div class="sec-label" style="margin-bottom:0">discography</div>
               </div>
-              <div id="songs-releases-scroll" style="display:flex; gap:12px; padding: 0 24px; overflow-x:auto; scrollbar-width:none;">
+              <div id="songs-releases-scroll" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px 12px; padding: 0 24px;">
               </div>
             </div>
           </div>
@@ -430,7 +455,10 @@
     <!-- UPDATES -->
     <div class="page" id="page-updates">
       <div id="updates-loading" class="state-row"><div class="spinner"></div><p>loading...</p></div>
-      <div id="updates-list" style="padding: 16px 24px 0;"></div>
+      <div id="updates-content" style="display:none">
+        <div id="updates-hero"></div>
+        <div id="updates-list" style="padding: 0 24px 0;"></div>
+      </div>
       <div id="updates-empty" class="state-row" style="display:none"><p>nothing yet — check back soon.</p></div>
     </div>
 
@@ -543,6 +571,7 @@
         <div class="atab active" data-atab="upload">upload</div>
         <div class="atab" data-atab="manage">manage</div>
         <div class="atab" data-atab="updates">updates</div>
+        <div class="atab" data-atab="latest">latest</div>
       </div>
 
       <!-- UPLOAD TAB -->
@@ -704,6 +733,34 @@
         <div id="upd-manage-list"><div class="state-row"><div class="spinner"></div></div></div>
       </div>
 
+      <!-- LATEST TAB -->
+      <div class="atab-panel" id="atab-latest">
+        <div class="form-msg ok" id="latest-ok">✓ saved</div>
+
+        <!-- SONGS hero -->
+        <div class="sp-sec-label" style="margin-bottom:8px;">songs hero</div>
+        <div class="fhint" style="margin-bottom:10px;">pick a release (ep/album) or a single track to show as the big card on the songs page.</div>
+        <div id="latest-songs-list" class="latest-picker-list"></div>
+        <div style="height:1px;background:var(--paper-deep);margin:20px 0 16px;"></div>
+
+        <!-- VIDEOS hero -->
+        <div class="sp-sec-label" style="margin-bottom:8px;">music videos hero</div>
+        <div class="fhint" style="margin-bottom:10px;">pick one video to feature at the top of the music videos tab.</div>
+        <div id="latest-videos-list" class="latest-picker-list"></div>
+        <div style="height:1px;background:var(--paper-deep);margin:20px 0 16px;"></div>
+
+        <!-- LIVE hero -->
+        <div class="sp-sec-label" style="margin-bottom:8px;">live hero</div>
+        <div class="fhint" style="margin-bottom:10px;">pick one live performance to feature at the top.</div>
+        <div id="latest-live-list" class="latest-picker-list"></div>
+        <div style="height:1px;background:var(--paper-deep);margin:20px 0 16px;"></div>
+
+        <!-- UPDATES hero -->
+        <div class="sp-sec-label" style="margin-bottom:8px;">updates hero</div>
+        <div class="fhint" style="margin-bottom:10px;">pick one post to show as the hero card on the updates page.</div>
+        <div id="latest-updates-list" class="latest-picker-list"></div>
+      </div>
+
     </div>
   </div>
 
@@ -753,6 +810,8 @@
       renderDemos(demos);
       renderManageList(data);
       populateReleaseNames(data);
+      renderVideoHero();
+      renderLiveHero();
     } catch(e) {
       ['songs','videos','live'].forEach(function(k){
         hide(k+'-loading'); show(k+'-error');
@@ -785,30 +844,8 @@
       return yb - ya;
     });
 
-    // ── featured release card (latest EP/album) ──
-    var featuredEl = g('songs-featured');
-    featuredEl.innerHTML = '';
-    if (releaseNames.length) {
-      var latestRelease = releaseNames[0];
-      var latestTracks  = releaseMap[latestRelease];
-      var featArt  = latestTracks[0].artwork_url || null;
-      var featYear = latestTracks[0].year || '';
-      var featType = latestTracks[0].release_type || 'release';
-      var card = document.createElement('div');
-      card.className = 'featured-card';
-      card.innerHTML =
-        (featArt
-          ? '<img class="featured-card-art" src="'+esc(featArt)+'" alt="'+esc(latestRelease)+'">'
-          : '<div class="featured-card-art-placeholder"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>')+
-        '<div class="featured-card-overlay">'+
-          '<div class="featured-card-label">latest '+featType+'</div>'+
-          '<div class="featured-card-title">'+esc(latestRelease)+'</div>'+
-          '<div class="featured-card-meta">'+featYear+' · '+latestTracks.length+' track'+(latestTracks.length!==1?'s':'')+'</div>'+
-        '</div>'+
-        '<div class="featured-play-btn"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>';
-      card.addEventListener('click', function(){ openAlbumPanel(latestRelease, latestTracks); });
-      featuredEl.appendChild(card);
-    }
+    // ── hero card from config ──
+    renderSongsHero();
 
     // ── popular tracks (featured = true) ──
     var popular = visible.filter(function(t){ return t.featured === true; });
@@ -1230,6 +1267,7 @@
     t.addEventListener('click', function(){
       document.querySelectorAll('.atab').forEach(function(x){ x.classList.toggle('active', x===t); });
       document.querySelectorAll('.atab-panel').forEach(function(p){ p.classList.toggle('active', p.id==='atab-'+t.dataset.atab); });
+      if (t.dataset.atab === 'latest') loadLatestPicker();
     });
   });
 
@@ -1703,10 +1741,17 @@
 
   function renderUpdatesList(data) {
     hide('updates-loading');
+    var published = data.filter(function(u){ return u.status === 'published'; });
+    if (!published.length) { show('updates-empty'); return; }
+
+    renderUpdatesHero();
+
     var list = g('updates-list');
     list.innerHTML = '';
-    if (!data.length) { show('updates-empty'); return; }
-    data.forEach(function(u) {
+    // show all except the hero post
+    var heroId = appConfig['hero_updates'] || '';
+    published.forEach(function(u) {
+      if (u.id === heroId) return; // skip hero — already shown above
       var card = document.createElement('div');
       card.className = 'upd-card';
       var imgHtml = u.image_url ? '<img class="upd-card-img" src="'+esc(u.image_url)+'" alt="">' : '';
@@ -1721,6 +1766,7 @@
       card.addEventListener('click', function(){ openUpdatePost(u); });
       list.appendChild(card);
     });
+    show('updates-content');
   }
 
   function openPinnedPost() {
@@ -1948,8 +1994,236 @@
     } catch(e) { alert('delete failed'); }
   }
 
-  loadTracks();
-  loadUpdates();
+  // ────────────────────────────────────────────────
+  // CONFIG — hero selections
+  // ────────────────────────────────────────────────
+  var appConfig = {};
+
+  async function loadConfig() {
+    try {
+      var res = await fetch(SB_URL + '/rest/v1/config?select=*', {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+      });
+      if (!res.ok) throw new Error();
+      var rows = await res.json();
+      appConfig = {};
+      rows.forEach(function(r){ appConfig[r.key] = r.value; });
+    } catch(e) { console.error('loadConfig failed', e); }
+  }
+
+  async function saveConfig(key, value) {
+    await fetch(SB_URL + '/rest/v1/config', {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ key: key, value: value })
+    });
+    appConfig[key] = value;
+  }
+
+  // ────────────────────────────────────────────────
+  // LATEST PICKER
+  // ────────────────────────────────────────────────
+  async function loadLatestPicker() {
+    await loadConfig();
+    renderSongsPicker();
+    renderVideosPicker();
+    renderLivePicker();
+    renderUpdatesPicker();
+  }
+
+  function makeLatestItem(art, title, meta, value, configKey, selectedValue, onclick) {
+    var item = document.createElement('div');
+    item.className = 'latest-item' + (selectedValue === value ? ' selected' : '');
+    item.innerHTML =
+      '<div class="latest-item-art">' +
+        (art ? '<img src="'+esc(art)+'" alt="">' : '<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>') +
+      '</div>' +
+      '<div class="latest-item-info"><div class="latest-item-title">'+esc(title)+'</div><div class="latest-item-meta">'+esc(meta)+'</div></div>' +
+      '<div class="latest-item-check"></div>';
+    item.addEventListener('click', function() {
+      onclick(value, configKey, item.closest('.latest-picker-list'));
+    });
+    return item;
+  }
+
+  async function selectLatest(value, configKey, list) {
+    await saveConfig(configKey, value);
+    list.querySelectorAll('.latest-item').forEach(function(el){ el.classList.remove('selected'); });
+    event.currentTarget.classList.add('selected');
+    show('latest-ok');
+    setTimeout(function(){ hide('latest-ok'); }, 2000);
+    // refresh the relevant hero
+    if (configKey === 'hero_songs')   renderSongsHero();
+    if (configKey === 'hero_videos')  renderVideoHero();
+    if (configKey === 'hero_live')    renderLiveHero();
+    if (configKey === 'hero_updates') renderUpdatesHero();
+  }
+
+  function renderSongsPicker() {
+    var list = g('latest-songs-list'); list.innerHTML = '';
+    var selected = appConfig['hero_songs'] || '';
+    // releases first
+    var releaseMap = {};
+    tracks.forEach(function(t) {
+      var rn = (t.release_name||'').trim();
+      var rt = (t.release_type||'').toLowerCase();
+      if (rn && (rt==='ep'||rt==='album')) {
+        if (!releaseMap[rn]) releaseMap[rn] = t;
+      }
+    });
+    Object.keys(releaseMap).forEach(function(rn) {
+      var t = releaseMap[rn];
+      list.appendChild(makeLatestItem(t.artwork_url, rn, (t.year||'') + ' · ' + (t.release_type||''), 'release:'+rn, 'hero_songs', selected, selectLatest));
+    });
+    // individual tracks
+    tracks.forEach(function(t) {
+      list.appendChild(makeLatestItem(t.artwork_url, t.title, (t.release_type||'single') + (t.year?' · '+t.year:''), 'track:'+t.id, 'hero_songs', selected, selectLatest));
+    });
+  }
+
+  function renderVideosPicker() {
+    var list = g('latest-videos-list'); list.innerHTML = '';
+    var selected = appConfig['hero_videos'] || '';
+    var videos = tracks.filter(function(t){ return t.type==='video'; });
+    if (!videos.length) { list.innerHTML = '<div style="font-size:11px;color:var(--ink-faint);font-family:Inter,sans-serif;">no videos yet.</div>'; return; }
+    videos.forEach(function(t) {
+      var thumb = t.youtube_url ? 'https://img.youtube.com/vi/'+t.youtube_url+'/mqdefault.jpg' : null;
+      list.appendChild(makeLatestItem(thumb, t.title, t.year||'', 'track:'+t.id, 'hero_videos', selected, selectLatest));
+    });
+  }
+
+  function renderLivePicker() {
+    var list = g('latest-live-list'); list.innerHTML = '';
+    var selected = appConfig['hero_live'] || '';
+    var live = tracks.filter(function(t){ return t.type==='live'; });
+    if (!live.length) { list.innerHTML = '<div style="font-size:11px;color:var(--ink-faint);font-family:Inter,sans-serif;">no live videos yet.</div>'; return; }
+    live.forEach(function(t) {
+      var thumb = t.youtube_url ? 'https://img.youtube.com/vi/'+t.youtube_url+'/mqdefault.jpg' : null;
+      list.appendChild(makeLatestItem(thumb, t.title, t.year||'', 'track:'+t.id, 'hero_live', selected, selectLatest));
+    });
+  }
+
+  function renderUpdatesPicker() {
+    var list = g('latest-updates-list'); list.innerHTML = '';
+    var selected = appConfig['hero_updates'] || '';
+    var published = updates.filter(function(u){ return u.status==='published'; });
+    if (!published.length) { list.innerHTML = '<div style="font-size:11px;color:var(--ink-faint);font-family:Inter,sans-serif;">no posts yet.</div>'; return; }
+    published.forEach(function(u) {
+      list.appendChild(makeLatestItem(u.image_url, u.title, fmtDate(u.created_at), u.id, 'hero_updates', selected, selectLatest));
+    });
+  }
+
+  // ────────────────────────────────────────────────
+  // HERO CARD RENDERERS
+  // ────────────────────────────────────────────────
+  function renderSongsHero() {
+    var val = appConfig['hero_songs'] || '';
+    var featuredEl = g('songs-featured');
+    featuredEl.innerHTML = '';
+    if (!val) return;
+
+    if (val.indexOf('release:') === 0) {
+      var rn = val.slice(8);
+      var rTracks = tracks.filter(function(t){ return (t.release_name||'').trim()===rn && t.type==='audio'; });
+      if (!rTracks.length) return;
+      var art  = rTracks[0].artwork_url;
+      var year = rTracks[0].year || '';
+      var type = rTracks[0].release_type || 'release';
+      var card = document.createElement('div');
+      card.className = 'featured-card';
+      card.innerHTML =
+        (art ? '<img class="featured-card-art" src="'+esc(art)+'" alt="'+esc(rn)+'">'
+             : '<div class="featured-card-art-placeholder"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>')+
+        '<div class="featured-card-overlay">'+
+          '<div class="featured-card-label">latest '+type+'</div>'+
+          '<div class="featured-card-title">'+esc(rn)+'</div>'+
+          '<div class="featured-card-meta">'+year+' · '+rTracks.length+' track'+(rTracks.length!==1?'s':'')+'</div>'+
+        '</div>'+
+        '<div class="featured-play-btn"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>';
+      card.addEventListener('click', function(){ openAlbumPanel(rn, rTracks); });
+      featuredEl.appendChild(card);
+    } else if (val.indexOf('track:') === 0) {
+      var tid = parseInt(val.slice(6));
+      var t = tracks.find(function(t){ return t.id === tid; });
+      if (!t) return;
+      var card = document.createElement('div');
+      card.className = 'featured-card';
+      card.innerHTML =
+        (t.artwork_url ? '<img class="featured-card-art" src="'+esc(t.artwork_url)+'" alt="'+esc(t.title)+'">'
+                       : '<div class="featured-card-art-placeholder"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>')+
+        '<div class="featured-card-overlay">'+
+          '<div class="featured-card-label">latest single</div>'+
+          '<div class="featured-card-title">'+esc(t.title)+'</div>'+
+          '<div class="featured-card-meta">'+(t.year||'')+'</div>'+
+        '</div>'+
+        '<div class="featured-play-btn"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>';
+      card.addEventListener('click', function(){ playTrack(tracks.indexOf(t)); });
+      featuredEl.appendChild(card);
+    }
+  }
+
+  function renderVideoHero() {
+    // prepend a hero card to videos section if set
+    var val = appConfig['hero_videos'] || '';
+    renderMediaHero('videos', val, 'video');
+  }
+
+  function renderLiveHero() {
+    var val = appConfig['hero_live'] || '';
+    renderMediaHero('live', val, 'live');
+  }
+
+  function renderMediaHero(key, val, type) {
+    var existing = g(key+'-hero');
+    if (existing) existing.remove();
+    if (!val || val.indexOf('track:') !== 0) return;
+    var tid = parseInt(val.slice(6));
+    var t = tracks.find(function(t){ return t.id === tid; });
+    if (!t) return;
+    var thumb = t.youtube_url ? 'https://img.youtube.com/vi/'+t.youtube_url+'/hqdefault.jpg' : null;
+    var hero = document.createElement('div');
+    hero.id = key+'-hero';
+    hero.style.cssText = 'margin:16px 24px 16px; border-radius:12px; overflow:hidden; cursor:pointer; background:var(--paper-mid); border:0.5px solid var(--paper-deep); position:relative;';
+    hero.innerHTML =
+      (thumb ? '<img src="'+esc(thumb)+'" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;">'
+             : '<div style="width:100%;aspect-ratio:16/9;background:var(--paper-deep);display:flex;align-items:center;justify-content:center;"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--ink-faint)" stroke-width="1"><polygon points="5,3 19,12 5,21"/></svg></div>')+
+      '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(15,10,5,0.85) 0%,transparent 100%);padding:30px 14px 14px;">'+
+        '<div style="font-size:9px;font-family:Inter,sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);margin-bottom:3px;">latest '+type+'</div>'+
+        '<div style="font-size:16px;font-weight:400;color:#EFE6D3;letter-spacing:-0.02em;">'+esc(t.title)+'</div>'+
+      '</div>'+
+      '<div style="position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;background:rgba(15,10,5,0.6);border:1px solid rgba(239,230,211,0.3);display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="#EFE6D3" style="margin-left:2px;"><polygon points="5,3 19,12 5,21"/></svg></div>';
+    hero.addEventListener('click', function(){ if (t.youtube_url) window.open('https://youtu.be/'+t.youtube_url,'_blank'); });
+    var content = g(key+'-content');
+    if (content) content.prepend(hero);
+  }
+
+  function renderUpdatesHero() {
+    var heroEl = g('updates-hero'); heroEl.innerHTML = '';
+    var val = appConfig['hero_updates'] || '';
+    if (!val) return;
+    var u = updates.find(function(u){ return u.id === val; });
+    if (!u || u.status !== 'published') return;
+    var hero = document.createElement('div');
+    hero.className = 'upd-hero';
+    hero.innerHTML =
+      (u.image_url
+        ? '<img class="upd-hero-img" src="'+esc(u.image_url)+'" alt="">'
+        : '<div class="upd-hero-img-placeholder"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>')+
+      '<div class="upd-hero-body">'+
+        '<div class="upd-hero-label">latest update</div>'+
+        '<div class="upd-hero-title">'+esc(u.title)+'</div>'+
+        '<div class="upd-hero-meta">'+fmtDate(u.created_at)+'</div>'+
+      '</div>';
+    hero.addEventListener('click', function(){ openUpdatePost(u); });
+    heroEl.appendChild(hero);
+  }
+
+  async function init() {
+    await loadConfig();
+    loadTracks();
+    loadUpdates();
+  }
+  init();
 </script>
 </body>
 </html>
