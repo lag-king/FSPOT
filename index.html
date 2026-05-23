@@ -1497,7 +1497,7 @@
             '<div class="edit-drawer" id="ed-'+t.id+'">'+
               '<div class="fg"><label class="fl">title</label><input class="fi" id="et-title-'+t.id+'" value="'+esc(t.title)+'"></div>'+
               '<div class="fg"><label class="fl">release type</label>'+
-                '<select class="fi fsel" id="et-release-type-'+t.id+'">'+
+                '<select class="fi fsel" id="et-release-type-'+t.id+'" onchange="toggleEditReleaseName(\''+t.id+'\')">'+
                   '<option value="single"'+(t.release_type==='single'?' selected':'')+'>single</option>'+
                   '<option value="ep"'+(t.release_type==='ep'?' selected':'')+'>ep</option>'+
                   '<option value="album"'+(t.release_type==='album'?' selected':'')+'>album</option>'+
@@ -1505,6 +1505,11 @@
                   '<option value="video"'+(t.release_type==='video'?' selected':'')+'>music video</option>'+
                   '<option value="live"'+(t.release_type==='live'?' selected':'')+'>live</option>'+
                 '</select>'+
+              '</div>'+
+              '<div class="fg" id="et-rname-group-'+t.id+'" style="display:'+(t.release_type==='ep'||t.release_type==='album'?'block':'none')+';">'+
+                '<label class="fl">release name</label>'+
+                '<input class="fi" id="et-release-name-'+t.id+'" value="'+esc(t.release_name||'')+'" placeholder="e.g. the late hours ep">'+
+                '<div class="fhint">tracks with the same release name are grouped together</div>'+
               '</div>'+
               '<div class="fr">'+
                 '<div class="fg"><label class="fl">year</label><input class="fi" id="et-year-'+t.id+'" value="'+(t.year||'')+'" placeholder="2025"></div>'+
@@ -1562,6 +1567,12 @@
     drawer.classList.toggle('open');
   }
 
+  function toggleEditReleaseName(id) {
+    var val = g('et-release-type-'+id).value;
+    var grp = g('et-rname-group-'+id);
+    if (grp) grp.style.display = (val === 'ep' || val === 'album') ? 'block' : 'none';
+  }
+
   // per-track edit upload storage
   var editUploads = {};
 
@@ -1607,6 +1618,7 @@
       duration: g('et-dur-'+id).value.trim() || null,
       order:    parseInt(g('et-order-'+id).value) || 99,
       release_type: g('et-release-type-'+id) ? g('et-release-type-'+id).value : null,
+      release_name: g('et-release-name-'+id) ? (g('et-release-name-'+id).value.trim() || null) : null,
       lyrics:   g('et-lyrics-'+id).value.trim() || null,
       credits:  g('et-credits-'+id).value.trim() || null,
       status:   g('et-status-'+id).value || 'active',
