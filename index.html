@@ -818,6 +818,7 @@
         var idx = tracks.indexOf(t);
         pl.appendChild(makeTrackRow(t, idx));
       });
+<<<<<<< HEAD
       var lbl = g('songs-popular-wrap').querySelector('.sec-label');
       if (lbl) lbl.textContent = 'popular';
       g('songs-popular-wrap').style.display = 'block';
@@ -832,6 +833,9 @@
       // change label to "all songs"
       var lbl = g('songs-popular-wrap').querySelector('.sec-label');
       if (lbl) lbl.textContent = 'all songs';
+=======
+      g('songs-popular-wrap').style.display = 'block';
+>>>>>>> ca210f7fe83cb8b9b728bd10882e8fc41fe05423
     }
 
     // ── discography (EPs + albums sorted by year desc) ──
@@ -1283,13 +1287,21 @@
     var isEpOrAlbum = val === 'audio_ep' || val === 'audio_album';
 
     g('audio-upload-group').style.display = (isAudio || isDemo) ? 'block' : 'none';
+<<<<<<< HEAD
     g('youtube-group').style.display      = (!isAudio && !isDemo) ? 'block' : 'none';
     g('release-name-group').style.display = isEpOrAlbum ? 'block' : 'none';
 
+=======
+    g('youtube-group').style.display      = (isAudio || isDemo) ? 'none'  : 'block';
+>>>>>>> ca210f7fe83cb8b9b728bd10882e8fc41fe05423
     document.querySelectorAll('#atab-upload .fg').forEach(function(fg) {
       var lbl = fg.querySelector('.fl');
       if (!lbl) return;
       var txt = lbl.textContent.trim().toLowerCase();
+<<<<<<< HEAD
+=======
+      if (txt === 'release') fg.style.display = isDemo ? 'none' : 'block';
+>>>>>>> ca210f7fe83cb8b9b728bd10882e8fc41fe05423
       if (txt === 'order (1 = first)') fg.style.display = isDemo ? 'none' : 'block';
       if (txt === 'lyrics')            fg.style.display = isDemo ? 'none' : 'block';
       if (txt === 'credits')           fg.style.display = isDemo ? 'none' : 'block';
