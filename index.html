@@ -694,9 +694,9 @@
         </div>
 
         <div class="fg">
-          <label class="fl">youtube video id</label>
-          <input class="fi" type="text" id="v-youtube" placeholder="26WMY_Ks58A">
-          <div class="fhint">paste only the video id — not the full url</div>
+          <label class="fl">youtube url or id</label>
+          <input class="fi" type="text" id="v-youtube" placeholder="https://youtube.com/watch?v=26WMY_Ks58A">
+          <div class="fhint">paste the full url or just the video id</div>
         </div>
 
         <div class="fg">
@@ -1051,6 +1051,23 @@
   }
 
   // ── Video admin ──
+  function extractYoutubeId(input) {
+    if (!input) return null;
+    input = input.trim();
+    // already just an ID (no slashes or dots)
+    if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
+    // youtu.be/ID
+    var m = input.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+    if (m) return m[1];
+    // youtube.com/watch?v=ID
+    m = input.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+    if (m) return m[1];
+    // youtube.com/embed/ID or /shorts/ID
+    m = input.match(/(?:embed|shorts)\/([a-zA-Z0-9_-]{11})/);
+    if (m) return m[1];
+    return input; // fallback — return as-is
+  }
+
   async function submitVideo() {
     var title = g('v-title').value.trim();
     if (!title) { alert('please enter a title'); return; }
@@ -1060,7 +1077,7 @@
     var payload = {
       title:       title,
       type:        g('v-type').value,
-      youtube_url: g('v-youtube').value.trim() || null,
+      youtube_url: extractYoutubeId(g('v-youtube').value) || null,
       year:        g('v-year').value.trim() || null,
       order:       parseInt(g('v-order').value) || 99,
       status:      'active'
@@ -1165,7 +1182,7 @@
     var payload = {
       title:       g('vet-title-'+sid).value.trim(),
       type:        g('vet-type-'+sid).value,
-      youtube_url: g('vet-yt-'+sid).value.trim() || null,
+      youtube_url: extractYoutubeId(g('vet-yt-'+sid).value) || null,
       year:        g('vet-year-'+sid).value.trim() || null,
       order:       parseInt(g('vet-order-'+sid).value) || 99,
       status:      g('vet-status-'+sid).value
