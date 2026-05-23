@@ -774,7 +774,7 @@
   var ADMIN_PW  = '123';
   var BUCKET    = 'audio'; // your supabase storage bucket name
 
-  var tracks = [], currentIdx = 0;
+  var tracks = [], allTracks = [], currentIdx = 0;
   var audio  = document.getElementById('audio-el');
   var uploadedAudioUrl = null;
   var uploadedArtUrl   = null;
@@ -791,6 +791,7 @@
       var data = await res.json();
 
       console.log('all tracks from supabase:', JSON.stringify(data.map(function(t){ return {id:t.id,title:t.title,type:t.type,status:t.status}; })));
+      allTracks = data;
       var songs  = data.filter(function(t){ return t.type === 'audio'; });
       var videos = data.filter(function(t){ return t.type === 'video'; });
       var live   = data.filter(function(t){ return t.type === 'live'; });
@@ -1427,6 +1428,8 @@
     else if (val === 'audio_ep')     { type = 'audio'; releaseType = 'ep'; }
     else if (val === 'audio_album')  { type = 'audio'; releaseType = 'album'; }
     else if (val === 'demo')         { type = 'demo';  releaseType = 'demo'; }
+    else if (val === 'video')        { type = 'video'; releaseType = 'video'; }
+    else if (val === 'live')         { type = 'live';  releaseType = 'live'; }
     else                             { type = val;     releaseType = val; }
     var isDemo = type === 'demo';
     var payload = {
@@ -2102,7 +2105,7 @@
   function renderVideosPicker() {
     var list = g('latest-videos-list'); list.innerHTML = '';
     var selected = appConfig['hero_videos'] || '';
-    var videos = tracks.filter(function(t){ return t.type==='video'; });
+    var videos = allTracks.filter(function(t){ return t.type==='video'; });
     if (!videos.length) { list.innerHTML = '<div style="font-size:11px;color:var(--ink-faint);font-family:Inter,sans-serif;">no videos yet.</div>'; return; }
     videos.forEach(function(t) {
       var thumb = t.youtube_url ? 'https://img.youtube.com/vi/'+t.youtube_url+'/mqdefault.jpg' : null;
@@ -2113,7 +2116,7 @@
   function renderLivePicker() {
     var list = g('latest-live-list'); list.innerHTML = '';
     var selected = appConfig['hero_live'] || '';
-    var live = tracks.filter(function(t){ return t.type==='live'; });
+    var live = allTracks.filter(function(t){ return t.type==='live'; });
     if (!live.length) { list.innerHTML = '<div style="font-size:11px;color:var(--ink-faint);font-family:Inter,sans-serif;">no live videos yet.</div>'; return; }
     live.forEach(function(t) {
       var thumb = t.youtube_url ? 'https://img.youtube.com/vi/'+t.youtube_url+'/mqdefault.jpg' : null;
@@ -2196,7 +2199,7 @@
     if (existing) existing.remove();
     if (!val || val.indexOf('track:') !== 0) return;
     var tid = parseInt(val.slice(6));
-    var t = tracks.find(function(t){ return t.id === tid; });
+    var t = allTracks.find(function(t){ return t.id === tid; });
     if (!t) return;
     var thumb = t.youtube_url ? 'https://img.youtube.com/vi/'+t.youtube_url+'/hqdefault.jpg' : null;
     var hero = document.createElement('div');
