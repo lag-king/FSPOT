@@ -812,6 +812,7 @@
       populateReleaseNames(data);
       renderVideoHero();
       renderLiveHero();
+      renderSongsHero();
     } catch(e) {
       ['songs','videos','live'].forEach(function(k){
         hide(k+'-loading'); show(k+'-error');
@@ -843,9 +844,6 @@
       var yb = parseInt(releaseMap[b][0].year) || 0;
       return yb - ya;
     });
-
-    // ── hero card from config ──
-    renderSongsHero();
 
     // ── popular tracks (featured = true) ──
     var popular = visible.filter(function(t){ return t.featured === true; });
@@ -897,6 +895,7 @@
 
     if (tracks.length) setPlayerTrack(0);
     show('songs-content');
+    renderSongsHero();
   }
 
   // ── Album panel ──
@@ -1748,10 +1747,7 @@
 
     var list = g('updates-list');
     list.innerHTML = '';
-    // show all except the hero post
-    var heroId = appConfig['hero_updates'] || '';
     published.forEach(function(u) {
-      if (u.id === heroId) return; // skip hero — already shown above
       var card = document.createElement('div');
       card.className = 'upd-card';
       var imgHtml = u.image_url ? '<img class="upd-card-img" src="'+esc(u.image_url)+'" alt="">' : '';
