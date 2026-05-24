@@ -1595,7 +1595,6 @@
 
   async function handleAudioUpload(input) {
     var file = input.files[0]; if (!file) return;
-    // auto detect duration
     var tempUrl = URL.createObjectURL(file);
     var tempAudio = new Audio();
     tempAudio.src = tempUrl;
@@ -1606,18 +1605,18 @@
       URL.revokeObjectURL(tempUrl);
     });
     var path = 'tracks/' + Date.now() + '-' + sanitize(file.name);
-    g('audio-zone-label').textContent = file.name;
+    g('audio-label').textContent = file.name;
     try {
-      uploadedAudioUrl = await uploadToStorage('audio', path, file, 'audio-progress','audio-progress-fill','audio-progress-label','audio-upload-ok','audio-upload-err');
+      uploadedAudioUrl = await uploadToStorage('audio', path, file, 'audio-prog','audio-fill','audio-plabel','audio-ok','audio-err');
     } catch(e) { uploadedAudioUrl = null; }
   }
 
-  async function handleArtworkUpload(input) {
+  async function handleArtUpload(input) {
     var file = input.files[0]; if (!file) return;
     var path = 'artwork/' + Date.now() + '-' + sanitize(file.name);
-    g('art-zone-label').textContent = file.name;
+    g('art-label').textContent = file.name;
     try {
-      uploadedArtUrl = await uploadToStorage('audio', path, file, 'art-progress','art-progress-fill','art-progress-label','art-upload-ok','art-upload-err');
+      uploadedArtUrl = await uploadToStorage('audio', path, file, 'art-prog','art-fill','art-plabel','art-ok','art-err');
     } catch(e) { uploadedArtUrl = null; }
   }
 
@@ -1670,12 +1669,14 @@
         throw new Error(res.status + ': ' + errBody);
       }
       show('form-ok');
-      // clear
-      ['f-title','f-year','f-duration','f-lyrics','f-credits','f-order','f-youtube-url','f-release-name'].forEach(function(id){ g(id).value = ''; });
+      ['f-title','f-year','f-duration','f-lyrics','f-credits','f-order','f-youtube-url'].forEach(function(id){ if(g(id)) g(id).value = ''; });
+      var rn = g('f-release-name'); if(rn) rn.value = '';
+      var rnew = g('f-release-name-new'); if(rnew) { rnew.value = ''; rnew.style.display = 'none'; }
       uploadedAudioUrl = null; uploadedArtUrl = null;
-      g('audio-zone-label').textContent = 'tap to upload mp3';
-      g('art-zone-label').textContent   = 'tap to upload artwork';
-      hide('audio-upload-ok'); hide('art-upload-ok');
+      var al = g('audio-label'); if(al) al.textContent = 'tap to upload audio';
+      var arl = g('art-label'); if(arl) arl.textContent = 'tap to upload artwork';
+      var aok = g('audio-ok'); if(aok) aok.style.display = 'none';
+      var artok = g('art-ok'); if(artok) artok.style.display = 'none';
       loadTracks();
     } catch(e) {
       var errDiv = g('form-err');
