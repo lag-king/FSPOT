@@ -15,8 +15,8 @@
     --amber-soft: #D4924F; --blue: #3A567F; --blue-soft: #6282A8;
     --red: #A03030; --green: #3A6A3A;
   }
-  html, body { min-height: 100%; background: #D8CCBA; display: flex; justify-content: center; font-family: 'DM Sans', sans-serif; font-weight: 300; }
-  .device { width: 390px; min-height: 100vh; background: var(--paper); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  html, body { height: 100%; overflow: hidden; background: #D8CCBA; display: flex; justify-content: center; font-family: 'DM Sans', sans-serif; font-weight: 300; }
+  .device { width: 390px; height: 100vh; max-height: 100vh; background: var(--paper); display: flex; flex-direction: column; position: relative; overflow: hidden; }
 
   /* ── HEADER ── */
   .header { padding: 18px 24px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid var(--paper-deep); flex-shrink: 0; }
@@ -28,7 +28,7 @@
   .avatar-btn svg { width: 16px; height: 16px; fill: none; stroke: var(--ink-mid); stroke-width: 1.4; }
 
   /* ── PAGES ── */
-  .content { flex: 1; overflow-y: auto; padding-bottom: 130px; -webkit-overflow-scrolling: touch; }
+  .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; min-height: 0; }
   .content::-webkit-scrollbar { display: none; }
   .page { display: none; }
   .page.active { display: block; }
@@ -128,6 +128,7 @@
   .side-panel { position: absolute; top: 0; right: 0; bottom: 0; width: 100%; background: var(--paper); z-index: 200; transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; overflow-y: auto; }
   .side-panel.open { transform: translateX(0); }
   .side-panel::-webkit-scrollbar { display: none; }
+  #admin-panel { overflow: hidden; }
   .sp-header { padding: 52px 24px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid var(--paper-deep); flex-shrink: 0; }
   .sp-title { font-size: 15px; font-weight: 400; color: var(--ink); letter-spacing: -0.02em; }
   .close-btn { background: none; border: none; cursor: pointer; color: var(--ink-mid); padding: 0; display: flex; }
@@ -164,13 +165,28 @@
   .admin-unlock-btn { width: 100%; background: var(--ink); color: var(--paper); border: none; border-radius: 8px; padding: 12px; font-size: 13px; font-family: 'DM Sans', sans-serif; cursor: pointer; margin-top: 10px; }
 
   /* admin tabs */
-  .admin-body { display: none; flex-direction: column; }
+  .admin-body { display: none; flex-direction: column; overflow: hidden; height: 100%; }
   .admin-body.visible { display: flex; }
-  .admin-tabs { display: flex; border-bottom: 0.5px solid var(--paper-deep); padding: 0 24px; flex-shrink: 0; }
-  .atab { font-size: 12px; color: var(--ink-light); padding: 12px 0 10px; margin-right: 18px; border-bottom: 1.5px solid transparent; cursor: pointer; font-weight: 300; }
-  .atab.active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 400; }
-  .atab-panel { display: none; padding: 20px 24px 60px; }
-  .atab-panel.active { display: block; }
+  .admin-tabs { display: none; }
+  .atab { display: none; }
+  .atab-panel { display: none; }
+
+  /* ── ADMIN BOTTOM TABS ── */
+  .admin-bottom-tabs { display: flex; border-top: 0.5px solid var(--paper-deep); background: var(--paper-mid); flex-shrink: 0; margin-top: auto; }
+  .abtab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 14px; font-size: 10px; font-family: 'Inter', sans-serif; color: var(--ink-faint); cursor: pointer; transition: color 0.15s; letter-spacing: 0.04em; }
+  .abtab svg { width: 18px; height: 18px; }
+  .abtab.active { color: var(--ink); }
+
+  /* ── ADMIN SECTION TABS (top) ── */
+  .admin-sec-tabs { display: flex; border-bottom: 0.5px solid var(--paper-deep); flex-shrink: 0; padding: 0 24px; background: var(--paper); }
+  .astab { font-size: 12px; color: var(--ink-light); padding: 11px 0 9px; margin-right: 20px; border-bottom: 1.5px solid transparent; cursor: pointer; margin-bottom: -0.5px; transition: color 0.15s; }
+  .astab.active { color: var(--ink); border-bottom-color: var(--ink); }
+  .astab.latest-tab { margin-left: auto; margin-right: 0; }
+
+  /* ── ADMIN SECTIONS ── */
+  .admin-section { display: none; }
+  .admin-section.active { display: block; }
+  #admin-inner { flex: 1; overflow-y: auto; padding: 20px 24px 24px; min-height: 0; }
 
   /* form elements */
   .fg { margin-bottom: 14px; }
@@ -335,7 +351,7 @@
   .edit-save-btn:disabled { opacity: 0.5; }
 
   /* ── PLAYER ── */
-  .player-wrap { position: fixed; bottom: 56px; left: 50%; transform: translateX(-50%); width: 390px; background: var(--paper-mid); border-top: 0.5px solid var(--paper-deep); z-index: 100; }
+  .player-wrap { width: 100%; background: var(--paper-mid); border-top: 0.5px solid var(--paper-deep); z-index: 100; flex-shrink: 0; }
   .prog-bar { height: 2px; background: var(--paper-deep); cursor: pointer; }
   .prog-fill { height: 100%; background: var(--amber); width: 0%; pointer-events: none; }
   .player-inner { display: flex; align-items: center; gap: 10px; padding: 8px 20px 9px; }
@@ -353,7 +369,7 @@
   .p-time { font-size: 9px; color: var(--ink-faint); font-family: 'Inter', sans-serif; white-space: nowrap; }
 
   /* ── BOTTOM NAV ── */
-  .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 390px; background: var(--paper); border-top: 0.5px solid var(--paper-deep); display: flex; z-index: 101; }
+  .bottom-nav { width: 100%; background: var(--paper); border-top: 0.5px solid var(--paper-deep); display: flex; z-index: 101; flex-shrink: 0; }
   .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0 10px; cursor: pointer; border: none; background: none; color: var(--ink-faint); transition: color 0.15s; }
   .nav-btn.active { color: var(--ink); }
   .nav-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
@@ -567,238 +583,182 @@
 
     <!-- admin content -->
     <div class="admin-body" id="admin-body">
-      <div class="admin-tabs">
-        <div class="atab active" data-atab="upload">upload</div>
-        <div class="atab" data-atab="videos">videos</div>
-        <div class="atab" data-atab="manage">manage</div>
-        <div class="atab" data-atab="updates">updates</div>
-        <div class="atab" data-atab="latest">latest</div>
+
+      <!-- ── TOP SECTION TABS ── -->
+      <div class="admin-sec-tabs" id="admin-sec-tabs">
+        <div class="astab active" data-sec="music">music</div>
+        <div class="astab" data-sec="videos">videos</div>
+        <div class="astab" data-sec="updates">updates</div>
       </div>
 
-      <!-- UPLOAD TAB -->
-      <div class="atab-panel active" id="atab-upload">
-        <div class="form-msg ok" id="form-ok">✓ track saved successfully</div>
-        <div class="form-msg err" id="form-err">something went wrong — check and try again</div>
+      <!-- ── INNER CONTENT ── -->
+      <div id="admin-inner">
 
-        <div class="fg">
-          <label class="fl">song title</label>
-          <input class="fi" type="text" id="f-title" placeholder="you are loved">
-        </div>
-
-        <div class="fg">
-          <label class="fl">type</label>
-          <select class="fi fsel" id="f-type" onchange="onTypeChange()">
-            <option value="audio_single">song — single</option>
-            <option value="audio_ep">song — ep</option>
-            <option value="audio_album">song — album</option>
-            <option value="demo">demo</option>
-          </select>
-        </div>
-
-        <div class="fg" id="release-name-group" style="display:none">
-          <label class="fl">release name</label>
-          <select class="fi fsel" id="f-release-name" onchange="onReleaseNameChange()">
-            <option value="">— select or add new —</option>
-            <option value="__new__">+ add new release name</option>
-          </select>
-          <input class="fi" type="text" id="f-release-name-new" placeholder="e.g. the late hours ep" style="display:none;margin-top:8px;">
-          <div class="fhint">tracks with the same release name are grouped together</div>
-        </div>
-
-        <div class="fr">
+        <!-- UPLOAD → MUSIC -->
+        <div class="admin-section active" id="asec-upload-music">
+          <div class="form-msg ok" id="form-ok">✓ track saved successfully</div>
+          <div class="form-msg err" id="form-err">something went wrong — check and try again</div>
+          <div class="fg"><label class="fl">song title</label><input class="fi" type="text" id="f-title" placeholder="you are loved"></div>
           <div class="fg">
-            <label class="fl">year</label>
-            <input class="fi" type="text" id="f-year" placeholder="2025">
+            <label class="fl">type</label>
+            <select class="fi fsel" id="f-type" onchange="onTypeChange()">
+              <option value="audio_single">song — single</option>
+              <option value="audio_ep">song — ep</option>
+              <option value="audio_album">song — album</option>
+              <option value="demo">demo</option>
+            </select>
+          </div>
+          <div class="fg" id="release-name-group" style="display:none">
+            <label class="fl">release name</label>
+            <select class="fi fsel" id="f-release-name" onchange="onReleaseNameChange()">
+              <option value="">— select or add new —</option>
+              <option value="__new__">+ add new release name</option>
+            </select>
+            <input class="fi" type="text" id="f-release-name-new" placeholder="e.g. the late hours ep" style="display:none;margin-top:8px;">
+            <div class="fhint">tracks with the same release name are grouped together</div>
+          </div>
+          <div class="fg" id="audio-upload-group">
+            <label class="fl">audio file</label>
+            <div class="upload-zone" id="audio-zone">
+              <input type="file" accept="audio/*" id="audio-input" onchange="handleAudioUpload(this)">
+              <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+              <div class="upload-label" id="audio-label">tap to upload audio</div>
+              <div class="upload-hint">mp3, wav, aac</div>
+              <div class="upload-progress" id="audio-prog"><div class="upload-progress-bar"><div class="upload-progress-fill" id="audio-fill"></div></div><div class="upload-progress-label" id="audio-plabel">uploading...</div></div>
+              <div class="upload-success" id="audio-ok">✓ audio uploaded</div>
+              <div class="upload-error" id="audio-err">upload failed</div>
+            </div>
+          </div>
+          <div class="fg" id="youtube-group" style="display:none">
+            <label class="fl">youtube url or id</label>
+            <input class="fi" type="text" id="f-youtube-url" placeholder="https://youtu.be/...">
           </div>
           <div class="fg">
-            <label class="fl">duration</label>
-            <input class="fi" type="text" id="f-duration" placeholder="3:47">
-          </div>
-        </div>
-
-        <!-- Audio upload (shown for songs) -->
-        <div class="fg" id="audio-upload-group">
-          <label class="fl">audio file</label>
-          <div class="upload-zone" id="audio-zone">
-            <input type="file" accept="audio/*" id="audio-file-input" onchange="handleAudioUpload(this)">
-            <div class="upload-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
-            <div class="upload-label" id="audio-zone-label">tap to upload mp3</div>
-            <div class="upload-hint">mp3, wav, aac — max 50mb</div>
-            <div class="upload-progress" id="audio-progress">
-              <div class="upload-progress-bar"><div class="upload-progress-fill" id="audio-progress-fill"></div></div>
-              <div class="upload-progress-label" id="audio-progress-label">uploading...</div>
+            <label class="fl">artwork</label>
+            <div class="upload-zone" id="art-zone">
+              <input type="file" accept="image/*" id="art-input" onchange="handleArtUpload(this)">
+              <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+              <div class="upload-label" id="art-label">tap to upload artwork</div>
+              <div class="upload-hint">jpg, png, webp</div>
+              <div class="upload-progress" id="art-prog"><div class="upload-progress-bar"><div class="upload-progress-fill" id="art-fill"></div></div><div class="upload-progress-label" id="art-plabel">uploading...</div></div>
+              <div class="upload-success" id="art-ok">✓ artwork uploaded</div>
+              <div class="upload-error" id="art-err">upload failed</div>
             </div>
-            <div class="upload-success" id="audio-upload-ok">✓ audio uploaded</div>
-            <div class="upload-error" id="audio-upload-err">upload failed — try again</div>
           </div>
+          <div class="fr">
+            <div class="fg"><label class="fl">year</label><input class="fi" type="text" id="f-year" placeholder="2025"></div>
+            <div class="fg"><label class="fl">duration</label><input class="fi" type="text" id="f-duration" placeholder="3:47"></div>
+          </div>
+          <div class="fg"><label class="fl">order (1 = first)</label><input class="fi" type="number" id="f-order" placeholder="1"></div>
+          <div class="fg"><label class="fl">lyrics</label><textarea class="fi fta" id="f-lyrics" placeholder="optional..."></textarea></div>
+          <div class="fg"><label class="fl">credits</label><textarea class="fi fta" id="f-credits" placeholder="optional..."></textarea></div>
+          <button class="submit-btn" id="submit-btn" onclick="submitTrack()">save track</button>
         </div>
 
-        <!-- YouTube ID (shown for video/live) -->
-        <div class="fg" id="youtube-group" style="display:none">
-          <label class="fl">youtube video id</label>
-          <input class="fi" type="text" id="f-youtube-url" placeholder="26WMY_Ks58A">
-          <div class="fhint">paste only the video id from the youtube url — not the full link</div>
+        <!-- UPLOAD → VIDEOS -->
+        <div class="admin-section" id="asec-upload-videos">
+          <div class="form-msg ok" id="vid-form-ok">✓ video saved</div>
+          <div class="form-msg err" id="vid-form-err">something went wrong</div>
+          <div class="fg"><label class="fl">title</label><input class="fi" type="text" id="v-title" placeholder="follow me down (official video)"></div>
+          <div class="fg">
+            <label class="fl">type</label>
+            <select class="fi fsel" id="v-type">
+              <option value="video">music video</option>
+              <option value="live">live</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="fl">youtube url or id</label>
+            <input class="fi" type="text" id="v-youtube" placeholder="https://youtu.be/...">
+            <div class="fhint">paste the full url or just the video id</div>
+          </div>
+          <div class="fg"><label class="fl">year</label><input class="fi" type="text" id="v-year" placeholder="2025"></div>
+          <div class="fg"><label class="fl">order (1 = first)</label><input class="fi" type="number" id="v-order" placeholder="1"></div>
+          <button class="submit-btn" id="vid-submit-btn" onclick="submitVideo()">save video</button>
         </div>
 
-        <!-- Artwork upload -->
-        <div class="fg">
-          <label class="fl">artwork</label>
-          <div class="upload-zone" id="art-zone">
-            <input type="file" accept="image/*" id="art-file-input" onchange="handleArtworkUpload(this)">
-            <div class="upload-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
-            <div class="upload-label" id="art-zone-label">tap to upload artwork</div>
-            <div class="upload-hint">jpg, png, webp</div>
-            <div class="upload-progress" id="art-progress">
-              <div class="upload-progress-bar"><div class="upload-progress-fill" id="art-progress-fill"></div></div>
-              <div class="upload-progress-label" id="art-progress-label">uploading...</div>
+        <!-- UPLOAD → UPDATES -->
+        <div class="admin-section" id="asec-upload-updates">
+          <div class="form-msg ok" id="upd-form-ok">✓ post saved</div>
+          <div class="form-msg err" id="upd-form-err">something went wrong</div>
+          <div class="fg"><label class="fl">title</label><input class="fi" type="text" id="upd-title" placeholder="new single out now"></div>
+          <div class="fg"><label class="fl">body</label><textarea class="fi fta" id="upd-body" placeholder="write your update here..." style="min-height:120px;"></textarea></div>
+          <div class="fg">
+            <label class="fl">image</label>
+            <div class="upload-zone" id="upd-img-zone">
+              <input type="file" accept="image/*" id="upd-img-input" onchange="handleUpdateImageUpload(this)">
+              <div class="upload-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+              <div class="upload-label" id="upd-img-label">tap to upload image</div>
+              <div class="upload-hint">jpg, png, webp — optional</div>
+              <div class="upload-progress" id="upd-img-prog"><div class="upload-progress-bar"><div class="upload-progress-fill" id="upd-img-fill"></div></div><div class="upload-progress-label" id="upd-img-plabel">uploading...</div></div>
+              <div class="upload-success" id="upd-img-ok">✓ image uploaded</div>
+              <div class="upload-error" id="upd-img-err">upload failed</div>
             </div>
-            <div class="upload-success" id="art-upload-ok">✓ artwork uploaded</div>
-            <div class="upload-error" id="art-upload-err">upload failed — try again</div>
           </div>
-        </div>
-
-        <div class="fg">
-          <label class="fl">lyrics</label>
-          <textarea class="fi fta" id="f-lyrics" placeholder="paste lyrics here..."></textarea>
-        </div>
-
-        <div class="fg">
-          <label class="fl">credits</label>
-          <textarea class="fi fta" id="f-credits" placeholder="written by&#10;produced by&#10;recorded at"></textarea>
-        </div>
-
-        <div class="fg">
-          <label class="fl">order (1 = first)</label>
-          <input class="fi" type="number" id="f-order" placeholder="1">
-        </div>
-
-        <button class="submit-btn" id="submit-btn" onclick="submitTrack()">save track</button>
-      </div>
-
-      <!-- VIDEOS TAB -->
-      <div class="atab-panel" id="atab-videos">
-        <div class="form-msg ok" id="vid-form-ok">✓ video saved</div>
-        <div class="form-msg err" id="vid-form-err">something went wrong</div>
-
-        <div class="fg">
-          <label class="fl">title</label>
-          <input class="fi" type="text" id="v-title" placeholder="follow me down (official video)">
-        </div>
-
-        <div class="fg">
-          <label class="fl">type</label>
-          <select class="fi fsel" id="v-type">
-            <option value="video">music video</option>
-            <option value="live">live</option>
-          </select>
-        </div>
-
-        <div class="fg">
-          <label class="fl">youtube video id</label>
-          <input class="fi" type="text" id="v-youtube" placeholder="26WMY_Ks58A">
-          <div class="fhint">paste only the video id — not the full url</div>
-        </div>
-
-        <div class="fg">
-          <label class="fl">year</label>
-          <input class="fi" type="text" id="v-year" placeholder="2025">
-        </div>
-
-        <div class="fg">
-          <label class="fl">order (1 = first)</label>
-          <input class="fi" type="number" id="v-order" placeholder="1">
-        </div>
-
-        <button class="submit-btn" id="vid-submit-btn" onclick="submitVideo()">save video</button>
-
-        <div style="height:1px;background:var(--paper-deep);margin:24px 0 16px;"></div>
-        <div class="sp-sec-label">all videos</div>
-        <div id="vid-manage-list"><div class="state-row"><div class="spinner"></div></div></div>
-      </div>
-
-      <!-- MANAGE TAB -->
-      <div class="atab-panel" id="atab-manage">
-        <div class="sp-sec-label">all tracks</div>
-        <div id="manage-list"><div class="state-row"><div class="spinner"></div></div></div>
-      </div>
-
-      <!-- UPDATES ADMIN TAB -->
-      <div class="atab-panel" id="atab-updates">
-        <div class="form-msg ok" id="upd-form-ok">✓ post saved</div>
-        <div class="form-msg err" id="upd-form-err">something went wrong</div>
-
-        <div class="fg">
-          <label class="fl">title</label>
-          <input class="fi" type="text" id="upd-title" placeholder="new single out now">
-        </div>
-
-        <div class="fg">
-          <label class="fl">body</label>
-          <textarea class="fi fta" id="upd-body" placeholder="write your update here..." style="min-height:120px;"></textarea>
-        </div>
-
-        <div class="fg">
-          <label class="fl">image</label>
-          <div class="upload-zone" id="upd-img-zone">
-            <input type="file" accept="image/*" id="upd-img-input" onchange="handleUpdateImageUpload(this)">
-            <div class="upload-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
-            <div class="upload-label" id="upd-img-label">tap to upload image</div>
-            <div class="upload-hint">jpg, png, webp — optional</div>
-            <div class="upload-progress" id="upd-img-prog"><div class="upload-progress-bar"><div class="upload-progress-fill" id="upd-img-fill"></div></div><div class="upload-progress-label" id="upd-img-plabel">uploading...</div></div>
-            <div class="upload-success" id="upd-img-ok">✓ image uploaded</div>
-            <div class="upload-error" id="upd-img-err">upload failed</div>
+          <div class="fg" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 4px;">
+            <span style="font-size:12px;color:var(--ink);font-weight:400;">pin to banner</span>
+            <div id="upd-pin-toggle" onclick="togglePinNew()" style="width:40px;height:22px;border-radius:11px;background:var(--paper-deep);border:0.5px solid var(--paper-deeper);cursor:pointer;position:relative;transition:background 0.2s;" data-on="false">
+              <div style="position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:var(--paper);transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.15);" id="upd-pin-knob"></div>
+            </div>
           </div>
-        </div>
-
-        <div class="fg" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 4px;">
-          <span style="font-size:12px;color:var(--ink);font-weight:400;">pin to banner</span>
-          <div id="upd-pin-toggle" onclick="togglePinNew()" style="width:40px;height:22px;border-radius:11px;background:var(--paper-deep);border:0.5px solid var(--paper-deeper);cursor:pointer;position:relative;transition:background 0.2s;" data-on="false">
-            <div style="position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:var(--paper);transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.15);" id="upd-pin-knob"></div>
+          <div class="fhint" style="margin-bottom:14px;">pinned post shows as a banner on the music page.</div>
+          <div class="fg">
+            <label class="fl">status</label>
+            <select class="fi fsel" id="upd-status">
+              <option value="published">published</option>
+              <option value="draft">draft</option>
+            </select>
           </div>
-        </div>
-        <div class="fhint" style="margin-bottom:14px;">pinned post shows as a banner on the music page. only one post can be pinned at a time.</div>
-
-        <div class="fg">
-          <label class="fl">status</label>
-          <select class="fi fsel" id="upd-status">
-            <option value="published">published</option>
-            <option value="draft">draft</option>
-          </select>
+          <button class="submit-btn" id="upd-submit-btn" onclick="submitUpdate()">post update</button>
         </div>
 
-        <button class="submit-btn" id="upd-submit-btn" onclick="submitUpdate()">post update</button>
+        <!-- MANAGE → MUSIC -->
+        <div class="admin-section" id="asec-manage-music">
+          <div id="manage-list"><div class="state-row"><div class="spinner"></div></div></div>
+        </div>
 
-        <div style="height:1px;background:var(--paper-deep);margin:24px 0 16px;"></div>
-        <div class="sp-sec-label">all posts</div>
-        <div id="upd-manage-list"><div class="state-row"><div class="spinner"></div></div></div>
+        <!-- MANAGE → VIDEOS -->
+        <div class="admin-section" id="asec-manage-videos">
+          <div id="vid-manage-list"><div class="state-row"><div class="spinner"></div></div></div>
+        </div>
+
+        <!-- MANAGE → UPDATES -->
+        <div class="admin-section" id="asec-manage-updates">
+          <div id="upd-manage-list"><div class="state-row"><div class="spinner"></div></div></div>
+        </div>
+
+        <!-- MANAGE → LATEST -->
+        <div class="admin-section" id="asec-manage-latest">
+          <div class="form-msg ok" id="latest-ok">✓ saved</div>
+          <div class="sp-sec-label" style="margin-bottom:8px;">songs</div>
+          <div class="fhint" style="margin-bottom:10px;">pick a release or track to show as the hero on the songs page.</div>
+          <div id="latest-songs-list" class="latest-picker-list"></div>
+          <div style="height:1px;background:var(--paper-deep);margin:20px 0 16px;"></div>
+          <div class="sp-sec-label" style="margin-bottom:8px;">music videos</div>
+          <div class="fhint" style="margin-bottom:10px;">pick one video to feature at the top.</div>
+          <div id="latest-videos-list" class="latest-picker-list"></div>
+          <div style="height:1px;background:var(--paper-deep);margin:20px 0 16px;"></div>
+          <div class="sp-sec-label" style="margin-bottom:8px;">live</div>
+          <div class="fhint" style="margin-bottom:10px;">pick one live performance to feature at the top.</div>
+          <div id="latest-live-list" class="latest-picker-list"></div>
+          <div style="height:1px;background:var(--paper-deep);margin:20px 0 16px;"></div>
+          <div class="sp-sec-label" style="margin-bottom:8px;">updates</div>
+          <div class="fhint" style="margin-bottom:10px;">pick one post to show as the hero on the updates page.</div>
+          <div id="latest-updates-list" class="latest-picker-list"></div>
+        </div>
+
       </div>
 
-      <!-- LATEST TAB -->
-      <div class="atab-panel" id="atab-latest">
-        <div class="form-msg ok" id="latest-ok">✓ saved</div>
-
-        <!-- SONGS hero -->
-        <div class="sp-sec-label" style="margin-bottom:8px;">songs hero</div>
-        <div class="fhint" style="margin-bottom:10px;">pick a release (ep/album) or a single track to show as the big card on the songs page.</div>
-        <div id="latest-songs-list" class="latest-picker-list"></div>
-        <div style="height:1px;background:var(--paper-deep);margin:20px 0 16px;"></div>
-
-        <!-- VIDEOS hero -->
-        <div class="sp-sec-label" style="margin-bottom:8px;">music videos hero</div>
-        <div class="fhint" style="margin-bottom:10px;">pick one video to feature at the top of the music videos tab.</div>
-        <div id="latest-videos-list" class="latest-picker-list"></div>
-        <div style="height:1px;background:var(--paper-deep);margin:20px 0 16px;"></div>
-
-        <!-- LIVE hero -->
-        <div class="sp-sec-label" style="margin-bottom:8px;">live hero</div>
-        <div class="fhint" style="margin-bottom:10px;">pick one live performance to feature at the top.</div>
-        <div id="latest-live-list" class="latest-picker-list"></div>
-        <div style="height:1px;background:var(--paper-deep);margin:20px 0 16px;"></div>
-
-        <!-- UPDATES hero -->
-        <div class="sp-sec-label" style="margin-bottom:8px;">updates hero</div>
-        <div class="fhint" style="margin-bottom:10px;">pick one post to show as the hero card on the updates page.</div>
-        <div id="latest-updates-list" class="latest-picker-list"></div>
+      <!-- ── BOTTOM TABS ── -->
+      <div class="admin-bottom-tabs">
+        <div class="abtab active" data-abt="upload" onclick="switchAdminBottom('upload')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          upload
+        </div>
+        <div class="abtab" data-abt="manage" onclick="switchAdminBottom('manage')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          manage
+        </div>
       </div>
 
     </div>
@@ -1051,6 +1011,23 @@
   }
 
   // ── Video admin ──
+  function extractYoutubeId(input) {
+    if (!input) return null;
+    input = input.trim();
+    // already just an ID (no slashes or dots)
+    if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
+    // youtu.be/ID
+    var m = input.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+    if (m) return m[1];
+    // youtube.com/watch?v=ID
+    m = input.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+    if (m) return m[1];
+    // youtube.com/embed/ID or /shorts/ID
+    m = input.match(/(?:embed|shorts)\/([a-zA-Z0-9_-]{11})/);
+    if (m) return m[1];
+    return input; // fallback — return as-is
+  }
+
   async function submitVideo() {
     var title = g('v-title').value.trim();
     if (!title) { alert('please enter a title'); return; }
@@ -1060,7 +1037,7 @@
     var payload = {
       title:       title,
       type:        g('v-type').value,
-      youtube_url: g('v-youtube').value.trim() || null,
+      youtube_url: extractYoutubeId(g('v-youtube').value) || null,
       year:        g('v-year').value.trim() || null,
       order:       parseInt(g('v-order').value) || 99,
       status:      'active'
@@ -1165,7 +1142,7 @@
     var payload = {
       title:       g('vet-title-'+sid).value.trim(),
       type:        g('vet-type-'+sid).value,
-      youtube_url: g('vet-yt-'+sid).value.trim() || null,
+      youtube_url: extractYoutubeId(g('vet-yt-'+sid).value) || null,
       year:        g('vet-year-'+sid).value.trim() || null,
       order:       parseInt(g('vet-order-'+sid).value) || 99,
       status:      g('vet-status-'+sid).value
@@ -1462,12 +1439,45 @@
     });
   });
 
-  document.querySelectorAll('.atab').forEach(function(t){
-    t.addEventListener('click', function(){
-      document.querySelectorAll('.atab').forEach(function(x){ x.classList.toggle('active', x===t); });
-      document.querySelectorAll('.atab-panel').forEach(function(p){ p.classList.toggle('active', p.id==='atab-'+t.dataset.atab); });
-      if (t.dataset.atab === 'latest') loadLatestPicker();
+  // ── Admin bottom tab + section tab switching ──
+  var currentAdminBottom = 'upload';
+  var currentAdminSec = 'music';
+
+  function switchAdminBottom(abt) {
+    currentAdminBottom = abt;
+    document.querySelectorAll('.abtab').forEach(function(b){ b.classList.toggle('active', b.dataset.abt === abt); });
+    // update top tabs — manage gets a latest tab, upload doesn't
+    var tabs = g('admin-sec-tabs');
+    tabs.innerHTML =
+      '<div class="astab active" data-sec="music">music</div>'+
+      '<div class="astab" data-sec="videos">videos</div>'+
+      '<div class="astab" data-sec="updates">updates</div>'+
+      (abt === 'manage' ? '<div class="astab latest-tab" data-sec="latest">latest</div>' : '');
+    tabs.querySelectorAll('.astab').forEach(function(t){
+      t.addEventListener('click', function(){ switchAdminSec(t.dataset.sec); });
     });
+    // switch to music by default when changing bottom tab
+    currentAdminSec = 'music';
+    showAdminSection(abt, 'music');
+    if (abt === 'manage' && currentAdminSec === 'latest') loadLatestPicker();
+  }
+
+  function switchAdminSec(sec) {
+    currentAdminSec = sec;
+    document.querySelectorAll('.astab').forEach(function(t){ t.classList.toggle('active', t.dataset.sec === sec); });
+    showAdminSection(currentAdminBottom, sec);
+    if (currentAdminBottom === 'manage' && sec === 'latest') loadLatestPicker();
+  }
+
+  function showAdminSection(abt, sec) {
+    document.querySelectorAll('.admin-section').forEach(function(s){ s.classList.remove('active'); });
+    var el = g('asec-'+abt+'-'+sec);
+    if (el) el.classList.add('active');
+  }
+
+  // wire up initial top tabs
+  g('admin-sec-tabs').querySelectorAll('.astab').forEach(function(t){
+    t.addEventListener('click', function(){ switchAdminSec(t.dataset.sec); });
   });
 
   // ────────────────────────────────────────────────
@@ -1523,7 +1533,7 @@
     g('youtube-group').style.display      = (!isAudio && !isDemo) ? 'block' : 'none';
     g('release-name-group').style.display = isEpOrAlbum ? 'block' : 'none';
 
-    document.querySelectorAll('#atab-upload .fg').forEach(function(fg) {
+    document.querySelectorAll('#asec-upload-music .fg').forEach(function(fg) {
       var lbl = fg.querySelector('.fl');
       if (!lbl) return;
       var txt = lbl.textContent.trim().toLowerCase();
@@ -1531,7 +1541,7 @@
       if (txt === 'lyrics')            fg.style.display = isDemo ? 'none' : 'block';
       if (txt === 'credits')           fg.style.display = isDemo ? 'none' : 'block';
     });
-    var releaseRow = document.querySelector('#atab-upload .fr');
+    var releaseRow = document.querySelector('#asec-upload-music .fr');
     if (releaseRow) releaseRow.style.display = isDemo ? 'none' : 'flex';
   }
 
@@ -1686,10 +1696,8 @@
     if (!data.length) { list.innerHTML = '<div class="state-row"><p>no tracks yet.</p></div>'; return; }
 
     var folders = [
-      { key: 'songs',  label: 'songs',        types: ['audio'] },
-      { key: 'videos', label: 'music videos',  types: ['video'] },
-      { key: 'live',   label: 'live',          types: ['live']  },
-      { key: 'demos',  label: 'demos',         types: ['demo']  }
+      { key: 'songs',  label: 'songs',  types: ['audio'] },
+      { key: 'demos',  label: 'demos',  types: ['demo']  }
     ];
 
     folders.forEach(function(folder) {
