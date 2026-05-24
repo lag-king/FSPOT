@@ -843,6 +843,7 @@
     // ── popular tracks (featured = true) ──
     var popular = visible.filter(function(t){ return t.featured === true; });
     var singles = visible.filter(function(t){ return t.release_type === 'single'; });
+    console.log('visible:', visible.length, 'popular:', popular.length, 'singles:', singles.length, visible.map(function(t){ return t.title+':'+t.release_type+':'+t.status; }));
 
     if (popular.length) {
       var pl = g('songs-popular-list'); pl.innerHTML = '';
