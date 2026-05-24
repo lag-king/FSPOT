@@ -1589,7 +1589,7 @@
             resolve(publicUrl);
           } else {
             if (elErr) elErr.style.display = 'block';
-            alert('Upload failed ' + xhr.status + ':\n' + xhr.responseText);
+            console.error('Upload failed', xhr.status, xhr.responseText);
             reject(new Error(xhr.status + ': ' + xhr.responseText));
           }
         };
@@ -1597,7 +1597,6 @@
         xhr.onerror = function() {
           console.error('XHR network error');
           if (elErr) elErr.style.display = 'block';
-          alert('Upload failed: network error');
           reject(new Error('network error'));
         };
 
