@@ -1549,12 +1549,20 @@
   // FILE UPLOADS → Supabase Storage
   // ────────────────────────────────────────────────
   async function uploadToStorage(bucket, path, file, progressId, fillId, labelId, okId, errId) {
-    show(progressId);
-    hide(okId); hide(errId);
-    g(fillId).style.width = '10%';
+    var elProg  = g(progressId);
+    var elFill  = g(fillId);
+    var elLabel = g(labelId);
+    var elOk    = g(okId);
+    var elErr   = g(errId);
+
+    if (elProg)  elProg.style.display  = 'block';
+    if (elOk)    elOk.style.display    = 'none';
+    if (elErr)   elErr.style.display   = 'none';
+    if (elFill)  elFill.style.width    = '10%';
+
+    console.log('uploading to', bucket + '/' + path, file.type, file.size);
 
     try {
-      // Use fetch with XMLHttpRequest for progress
       return await new Promise(function(resolve, reject) {
         var xhr = new XMLHttpRequest();
         xhr.open('POST', SB_URL + '/storage/v1/object/' + bucket + '/' + path);
@@ -1566,31 +1574,38 @@
         xhr.upload.onprogress = function(e) {
           if (e.lengthComputable) {
             var pct = Math.round(e.loaded/e.total*90);
-            g(fillId).style.width = pct + '%';
-            g(labelId).textContent = pct + '%';
+            if (elFill)  elFill.style.width       = pct + '%';
+            if (elLabel) elLabel.textContent       = pct + '%';
           }
         };
 
         xhr.onload = function() {
-          g(fillId).style.width = '100%';
-          hide(progressId);
+          if (elFill) elFill.style.width = '100%';
+          if (elProg) elProg.style.display = 'none';
+          console.log('upload response:', xhr.status, xhr.responseText);
           if (xhr.status >= 200 && xhr.status < 300) {
-            show(okId);
+            if (elOk) elOk.style.display = 'block';
             var publicUrl = SB_URL + '/storage/v1/object/public/' + bucket + '/' + path;
             resolve(publicUrl);
           } else {
-            console.error('Storage upload failed:', xhr.status, xhr.responseText);
-            alert('Upload failed ' + xhr.status + ': ' + xhr.responseText);
-            show(errId);
+            if (elErr) elErr.style.display = 'block';
+            alert('Upload failed ' + xhr.status + ':\n' + xhr.responseText);
             reject(new Error(xhr.status + ': ' + xhr.responseText));
           }
         };
 
-        xhr.onerror = function() { show(errId); reject(new Error('network error')); };
+        xhr.onerror = function() {
+          console.error('XHR network error');
+          if (elErr) elErr.style.display = 'block';
+          alert('Upload failed: network error');
+          reject(new Error('network error'));
+        };
+
         xhr.send(file);
       });
     } catch(e) {
-      hide(progressId); show(errId);
+      if (elProg) elProg.style.display = 'none';
+      if (elErr)  elErr.style.display  = 'block';
       throw e;
     }
   }
