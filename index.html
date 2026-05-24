@@ -255,8 +255,8 @@
   .release-card-meta { font-size: 10px; color: var(--ink-faint); font-family: 'Inter', sans-serif; }
 
   /* album panel */
-  .alb-hero { width: 100%; aspect-ratio: 1/1; max-height: 260px; object-fit: cover; display: block; }
-  .alb-hero-placeholder { width: 100%; aspect-ratio: 1/1; max-height: 260px; background: linear-gradient(135deg, var(--paper-deep) 0%, var(--paper-deeper) 100%); display: flex; align-items: center; justify-content: center; }
+  .alb-hero { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; }
+  .alb-hero-placeholder { width: 100%; aspect-ratio: 1/1; background: linear-gradient(135deg, var(--paper-deep) 0%, var(--paper-deeper) 100%); display: flex; align-items: center; justify-content: center; }
   .alb-hero-placeholder svg { width: 56px; height: 56px; fill: none; stroke: var(--ink-faint); stroke-width: 1; }
   .alb-info { padding: 16px 24px 8px; }
   .alb-name { font-size: 20px; font-weight: 400; color: var(--ink); letter-spacing: -0.03em; margin-bottom: 3px; }
@@ -822,14 +822,17 @@
     var visible = data.filter(function(t){ return t.status !== 'inactive'; });
     tracks = visible;
 
-    // ── group EPs/albums by release_name ──
+    // ── group all releases by release_name, plus singles as individual cards ──
     var releaseMap = {};
+    var singleTracks = [];
     visible.forEach(function(t) {
       var rn   = (t.release_name || '').trim();
       var type = (t.release_type || '').toLowerCase();
       if (rn && (type === 'ep' || type === 'album')) {
         if (!releaseMap[rn]) releaseMap[rn] = [];
         releaseMap[rn].push(t);
+      } else if (type === 'single') {
+        singleTracks.push(t);
       }
     });
 
@@ -843,7 +846,6 @@
     // ── popular tracks (featured = true) ──
     var popular = visible.filter(function(t){ return t.featured === true; });
     var singles = visible.filter(function(t){ return t.release_type === 'single'; });
-    console.log('visible:', visible.length, 'popular:', popular.length, 'singles:', singles.length, visible.map(function(t){ return t.title+':'+t.release_type+':'+t.status; }));
 
     if (popular.length) {
       var pl = g('songs-popular-list'); pl.innerHTML = '';
@@ -875,27 +877,35 @@
       g('songs-popular-wrap').style.display = 'block';
     }
 
-    // ── discography (EPs + albums sorted by year desc) ──
-    if (releaseNames.length) {
+    // ── discography (EPs + albums + singles sorted by year desc) ──
+    if (releaseNames.length || singleTracks.length) {
       var scroll = g('songs-releases-scroll'); scroll.innerHTML = '';
+
+      // combine releases and singles into one list sorted by year desc
+      var allReleases = [];
       releaseNames.forEach(function(rn) {
         var rTracks = releaseMap[rn];
-        var art  = rTracks[0].artwork_url || null;
-        var year = rTracks[0].year || '';
-        var type = rTracks[0].release_type || 'release';
+        allReleases.push({ name: rn, tracks: rTracks, year: parseInt(rTracks[0].year) || 0, type: rTracks[0].release_type || 'release', art: rTracks[0].artwork_url || null, isSingle: false });
+      });
+      singleTracks.forEach(function(t) {
+        allReleases.push({ name: t.title, tracks: [t], year: parseInt(t.year) || 0, type: 'single', art: t.artwork_url || null, isSingle: true });
+      });
+      allReleases.sort(function(a, b){ return b.year - a.year; });
+
+      allReleases.forEach(function(r) {
         var card = document.createElement('div');
         card.className = 'release-card';
         card.innerHTML =
           '<div class="release-card-art">'+
-            (art
-              ? '<img src="'+esc(art)+'" alt="'+esc(rn)+'">'
-              : '<div class="release-card-art-placeholder"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>')+
+            (r.art ? '<img src="'+esc(r.art)+'" alt="'+esc(r.name)+'">'
+                   : '<div class="release-card-art-placeholder"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>')+
           '</div>'+
-          '<div class="release-card-title">'+esc(rn)+'</div>'+
-          '<div class="release-card-meta">'+year+(year&&type?' · ':'')+type+'</div>';
-        card.addEventListener('click', function(){ openAlbumPanel(rn, rTracks); });
+          '<div class="release-card-title">'+esc(r.name)+'</div>'+
+          '<div class="release-card-meta">'+(r.year||'')+(r.year?' · ':'')+r.type+'</div>';
+        card.addEventListener('click', function(){ openAlbumPanel(r.name, r.tracks); });
         scroll.appendChild(card);
       });
+
       g('songs-releases-wrap').style.display = 'block';
     }
 
