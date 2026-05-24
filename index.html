@@ -842,6 +842,8 @@
 
     // ── popular tracks (featured = true) ──
     var popular = visible.filter(function(t){ return t.featured === true; });
+    var singles = visible.filter(function(t){ return t.release_type === 'single'; });
+
     if (popular.length) {
       var pl = g('songs-popular-list'); pl.innerHTML = '';
       popular.forEach(function(t) {
@@ -851,17 +853,25 @@
       var lbl = g('songs-popular-wrap').querySelector('.sec-label');
       if (lbl) lbl.textContent = 'popular';
       g('songs-popular-wrap').style.display = 'block';
+    } else if (singles.length) {
+      var pl = g('songs-popular-list'); pl.innerHTML = '';
+      singles.forEach(function(t) {
+        var idx = tracks.indexOf(t);
+        pl.appendChild(makeTrackRow(t, idx));
+      });
+      var lbl = g('songs-popular-wrap').querySelector('.sec-label');
+      if (lbl) lbl.textContent = 'singles';
+      g('songs-popular-wrap').style.display = 'block';
     } else {
-      // fallback — show all tracks so the page is never empty
+      // fallback — show all tracks
       var pl = g('songs-popular-list'); pl.innerHTML = '';
       visible.forEach(function(t) {
         var idx = tracks.indexOf(t);
         pl.appendChild(makeTrackRow(t, idx));
       });
-      g('songs-popular-wrap').style.display = 'block';
-      // change label to "all songs"
       var lbl = g('songs-popular-wrap').querySelector('.sec-label');
       if (lbl) lbl.textContent = 'all songs';
+      g('songs-popular-wrap').style.display = 'block';
     }
 
     // ── discography (EPs + albums sorted by year desc) ──
@@ -1506,19 +1516,31 @@
   function populateReleaseNames(data) {
     var select = g('f-release-name');
     if (!select) return;
-    // collect unique release names
     var names = [];
     data.forEach(function(t) {
-      if (t.release_name && names.indexOf(t.release_name) === -1) names.push(t.release_name);
+      var rt = (t.release_type || '').toLowerCase();
+      if (t.release_name && (rt === 'ep' || rt === 'album') && names.indexOf(t.release_name) === -1) {
+        names.push(t.release_name);
+      }
     });
-    // clear existing options except first two
-    while (select.options.length > 2) select.remove(1);
-    // insert existing names before the "+ add new" option
+    // rebuild options
+    select.innerHTML = '<option value="">— select or add new —</option>';
     names.forEach(function(n) {
       var opt = document.createElement('option');
       opt.value = n; opt.textContent = n;
-      select.insertBefore(opt, select.options[select.options.length - 1]);
+      select.appendChild(opt);
     });
+    var addNew = document.createElement('option');
+    addNew.value = '__new__'; addNew.textContent = '+ add new release name';
+    select.appendChild(addNew);
+  }
+
+  function onReleaseNameChange() {
+    var val = g('f-release-name').value;
+    var newInput = g('f-release-name-new');
+    if (!newInput) return;
+    newInput.style.display = val === '__new__' ? 'block' : 'none';
+    if (val !== '__new__') newInput.value = '';
   }
 
   function onReleaseChange() {} // kept for safety, no longer used
@@ -1667,7 +1689,11 @@
       artwork_url:  uploadedArtUrl || null,
       lyrics:       isDemo ? null : (g('f-lyrics').value.trim() || null),
       credits:      isDemo ? null : (g('f-credits').value.trim() || null),
-      release_name: isDemo ? null : (g('f-release-name').value.trim() || (g('f-release-name-new') && g('f-release-name-new').value.trim()) || null),
+      release_name: isDemo ? null : (function(){
+        var sel = g('f-release-name'); if (!sel) return null;
+        if (sel.value === '__new__') return (g('f-release-name-new') && g('f-release-name-new').value.trim()) || null;
+        return sel.value.trim() || null;
+      }()),
       status:       'active',
       order:        parseInt(g('f-order').value) || 99
     };
