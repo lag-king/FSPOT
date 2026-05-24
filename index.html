@@ -1579,8 +1579,10 @@
             var publicUrl = SB_URL + '/storage/v1/object/public/' + bucket + '/' + path;
             resolve(publicUrl);
           } else {
+            console.error('Storage upload failed:', xhr.status, xhr.responseText);
+            alert('Upload failed ' + xhr.status + ': ' + xhr.responseText);
             show(errId);
-            reject(new Error(xhr.responseText));
+            reject(new Error(xhr.status + ': ' + xhr.responseText));
           }
         };
 
