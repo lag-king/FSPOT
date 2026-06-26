@@ -924,9 +924,10 @@
     });
 
     g('album-panel').classList.add('open');
+    _openOverlay();
   }
 
-  function closeAlbumPanel() { g('album-panel').classList.remove('open'); }
+  function closeAlbumPanel() { g('album-panel').classList.remove('open'); _closeOverlay(); }
 
   function playAlbum(name) {
     // find first track of this album and play it; next/prev will follow tracks[] order
@@ -1170,6 +1171,26 @@
   // ────────────────────────────────────────────────
   var demos = [], currentDemoIdx = -1, demoMode = false;
 
+  // ── Back-button / history overlay management ──
+  var _overlayDepth = 0;
+  function _openOverlay() {
+    _overlayDepth++;
+    history.pushState({anc_overlay: _overlayDepth}, '');
+  }
+  function _closeOverlay() {
+    if (_overlayDepth > 0) { _overlayDepth--; history.back(); }
+  }
+  window.addEventListener('popstate', function() {
+    if (_overlayDepth > 0) _overlayDepth--;
+    // Close topmost overlay in priority order
+    var lb = document.getElementById('_photo_lb');
+    if (lb) { lb.remove(); return; }
+    var td = document.getElementById('track-detail');
+    if (td) { td.style.transform = 'translateX(-50%) translateY(100%)'; setTimeout(function(){ if (td.parentNode) td.parentNode.removeChild(td); }, 320); return; }
+    var ap = g('album-panel');
+    if (ap && ap.classList.contains('open')) { ap.classList.remove('open'); return; }
+  });
+
   function waveBar(h) {
     return '<span style="height:'+h+'px;"></span>';
   }
@@ -1295,11 +1316,17 @@
     });
     body.appendChild(trackList);
     g('album-panel').classList.add('open');
+    _openOverlay();
   }
 
   function playDemoAlbum(name) {
     var first = demos.find(function(t){ return t.release_name === name; });
     if (first) playDemo(demos.indexOf(first));
+  }
+
+  function closePhotoLightbox() {
+    var lb = document.getElementById('_photo_lb');
+    if (lb) { lb.remove(); _closeOverlay(); }
   }
 
   function openPhotoLightbox(urls, startIdx) {
@@ -1311,7 +1338,7 @@
     lb.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.94);display:flex;flex-direction:column;align-items:center;justify-content:center;';
     function render() {
       lb.innerHTML =
-        '<button onclick="document.getElementById(\'_photo_lb\').remove()" style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.1);border:none;width:36px;height:36px;border-radius:50%;color:#EFE6D3;font-size:22px;line-height:1;cursor:pointer;">×</button>'+
+        '<button onclick="closePhotoLightbox()" style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.1);border:none;width:36px;height:36px;border-radius:50%;color:#EFE6D3;font-size:22px;line-height:1;cursor:pointer;">×</button>'+
         '<img src="'+esc(urls[cur])+'" style="max-width:92%;max-height:72%;object-fit:contain;border-radius:6px;">'+
         (urls.length > 1 ? '<div style="color:rgba(239,230,211,0.45);font-size:11px;font-family:Inter,sans-serif;margin-top:12px;">'+(cur+1)+' / '+urls.length+'</div>' : '')+
         (urls.length > 1 ?
@@ -1326,8 +1353,9 @@
       }
     }
     render();
-    lb.addEventListener('click', function(e){ if (e.target === lb) lb.remove(); });
+    lb.addEventListener('click', function(e){ if (e.target === lb) closePhotoLightbox(); });
     document.querySelector('.device').appendChild(lb);
+    _openOverlay();
   }
 
   function playDemo(idx) {
@@ -1534,6 +1562,7 @@
       '</div>';
 
     document.querySelector('.device').appendChild(panel);
+    _openOverlay();
 
     // sync progress
     if (audio.duration) {
@@ -1558,6 +1587,7 @@
     if (!panel) return;
     panel.style.transform = 'translateX(-50%) translateY(100%)';
     setTimeout(function(){ if (panel.parentNode) panel.parentNode.removeChild(panel); }, 320);
+    _closeOverlay();
   }
 
   // ────────────────────────────────────────────────
