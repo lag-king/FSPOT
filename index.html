@@ -1269,10 +1269,10 @@
       stripWrap.style.cssText = 'padding:0 16px 14px;';
       var strip = document.createElement('div');
       strip.style.cssText = 'display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;';
-      galleryUrls.forEach(function(url) {
+      galleryUrls.forEach(function(url, gi) {
         var img = document.createElement('img');
         img.src = url; img.style.cssText = 'width:120px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0;cursor:pointer;';
-        img.addEventListener('click', function(){ openPhotoLightbox(url); });
+        img.addEventListener('click', function(){ openPhotoLightbox(galleryUrls, gi); });
         strip.appendChild(img);
       });
       stripWrap.appendChild(strip);
@@ -1302,12 +1302,31 @@
     if (first) playDemo(demos.indexOf(first));
   }
 
-  function openPhotoLightbox(url) {
+  function openPhotoLightbox(urls, startIdx) {
+    if (!Array.isArray(urls)) { urls = [urls]; startIdx = 0; }
+    if (startIdx === undefined) startIdx = 0;
+    var cur = startIdx;
     var ex = document.getElementById('_photo_lb'); if (ex) ex.remove();
     var lb = document.createElement('div'); lb.id = '_photo_lb';
-    lb.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;';
-    lb.innerHTML = '<img src="'+esc(url)+'" style="max-width:100%;max-height:90%;object-fit:contain;border-radius:4px;">';
-    lb.addEventListener('click', function(){ lb.remove(); });
+    lb.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.94);display:flex;flex-direction:column;align-items:center;justify-content:center;';
+    function render() {
+      lb.innerHTML =
+        '<button onclick="document.getElementById(\'_photo_lb\').remove()" style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.1);border:none;width:36px;height:36px;border-radius:50%;color:#EFE6D3;font-size:22px;line-height:1;cursor:pointer;">×</button>'+
+        '<img src="'+esc(urls[cur])+'" style="max-width:92%;max-height:72%;object-fit:contain;border-radius:6px;">'+
+        (urls.length > 1 ? '<div style="color:rgba(239,230,211,0.45);font-size:11px;font-family:Inter,sans-serif;margin-top:12px;">'+(cur+1)+' / '+urls.length+'</div>' : '')+
+        (urls.length > 1 ?
+          '<div style="display:flex;gap:20px;margin-top:14px;">'+
+            '<button id="_lb_prev" style="background:rgba(255,255,255,0.1);border:none;width:44px;height:44px;border-radius:50%;color:#EFE6D3;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;">‹</button>'+
+            '<button id="_lb_next" style="background:rgba(255,255,255,0.1);border:none;width:44px;height:44px;border-radius:50%;color:#EFE6D3;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;">›</button>'+
+          '</div>'
+        : '');
+      if (urls.length > 1) {
+        lb.querySelector('#_lb_prev').addEventListener('click', function(e){ e.stopPropagation(); cur = cur > 0 ? cur-1 : urls.length-1; render(); });
+        lb.querySelector('#_lb_next').addEventListener('click', function(e){ e.stopPropagation(); cur = cur < urls.length-1 ? cur+1 : 0; render(); });
+      }
+    }
+    render();
+    lb.addEventListener('click', function(e){ if (e.target === lb) lb.remove(); });
     document.querySelector('.device').appendChild(lb);
   }
 
@@ -1320,7 +1339,7 @@
     g('p-band-name').textContent  = 'demo · as night calls';
     var thumb = g('p-thumb');
     var ei = thumb.querySelector('img'); if (ei) ei.remove();
-    // demo thumb — just the waveform rings, no artwork
+    if (t.artwork_url) { var timg = new Image(); timg.src = t.artwork_url; timg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;border-radius:4px;'; thumb.appendChild(timg); }
     audio.src = t.audio_url || ''; audio.load(); audio.play();
     g('prog-fill').style.width = '0%';
     g('p-time').textContent = '0:00';
@@ -1432,8 +1451,15 @@
   }
 
   function openTrackDetail() {
-    if (!tracks.length) return;
-    var t = tracks[currentIdx];
+    var isDemo = demoMode && currentDemoIdx >= 0;
+    var t;
+    if (isDemo) {
+      if (!demos.length) return;
+      t = demos[currentDemoIdx];
+    } else {
+      if (!tracks.length) return;
+      t = tracks[currentIdx];
+    }
 
     // Remove any existing panel
     var existing = document.getElementById('track-detail');
@@ -1447,13 +1473,17 @@
       ? 'background-image:url('+t.artwork_url+');background-size:cover;background-position:center;filter:blur(40px) brightness(0.45) saturate(0.7);transform:scale(1.15);'
       : 'background:linear-gradient(160deg,#3A2A1A 0%,#1A150E 100%);';
 
-    var lyricsHtml = (t.lyrics && t.lyrics.trim())
+    var rawLyrics = t.lyrics && t.lyrics.trim();
+    var showLyrics = rawLyrics && !isDemo && rawLyrics.indexOf('__gallery__:') !== 0;
+    var lyricsHtml = showLyrics
       ? '<div style="padding:0 28px;margin-bottom:24px;"><div style="font-size:9px;font-family:Inter,sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:rgba(239,230,211,0.35);margin-bottom:10px;">lyrics</div><div style="font-size:14px;color:rgba(239,230,211,0.8);line-height:1.9;font-weight:300;white-space:pre-line;">'+esc(t.lyrics)+'</div></div>'
       : '';
 
     var creditsHtml = (t.credits && t.credits.trim())
-      ? '<div style="padding:0 28px;margin-bottom:24px;"><div style="font-size:9px;font-family:Inter,sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:rgba(239,230,211,0.35);margin-bottom:10px;">credits</div><div style="font-size:12px;color:rgba(239,230,211,0.55);line-height:1.9;font-family:Inter,sans-serif;white-space:pre-line;">'+esc(t.credits)+'</div></div>'
+      ? '<div style="padding:0 28px;margin-bottom:24px;"><div style="font-size:9px;font-family:Inter,sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:rgba(239,230,211,0.35);margin-bottom:10px;">'+(isDemo ? 'session tags' : 'credits')+'</div><div style="font-size:12px;color:rgba(239,230,211,0.55);line-height:1.9;font-family:Inter,sans-serif;white-space:pre-line;">'+esc(t.credits)+'</div></div>'
       : '';
+
+    var bandLabel = isDemo ? 'demo · as night calls' : 'as night calls';
 
     var panel = document.createElement('div');
     panel.id = 'track-detail';
@@ -1475,7 +1505,7 @@
 
         '<div style="padding:0 28px;margin-bottom:24px;">'+
           '<div style="font-size:22px;font-weight:400;color:#EFE6D3;letter-spacing:-0.03em;line-height:1.2;margin-bottom:4px;">'+esc(t.title||'—')+'</div>'+
-          '<div style="font-size:13px;color:rgba(239,230,211,0.55);font-family:Inter,sans-serif;">as night calls</div>'+
+          '<div style="font-size:13px;color:rgba(239,230,211,0.55);font-family:Inter,sans-serif;">'+esc(bandLabel)+'</div>'+
         '</div>'+
 
         '<div style="padding:0 28px 24px;">'+
