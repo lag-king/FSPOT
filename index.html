@@ -927,7 +927,7 @@
     _openOverlay();
   }
 
-  function closeAlbumPanel() { g('album-panel').classList.remove('open'); _closeOverlay(); }
+  function closeAlbumPanel() { g('album-panel').classList.remove('open'); }
 
   function playAlbum(name) {
     // find first track of this album and play it; next/prev will follow tracks[] order
@@ -1172,23 +1172,33 @@
   var demos = [], currentDemoIdx = -1, demoMode = false;
 
   // ── Back-button / history overlay management ──
+  // Strategy: open functions push a history state; the physical back button
+  // fires popstate which closes the topmost panel. Close BUTTONS just close
+  // directly — they never call history.back() to avoid double-firing.
+  // When nothing is open and back fires, we re-push an anchor so the app
+  // never exits from a single back press.
   var _overlayDepth = 0;
   function _openOverlay() {
     _overlayDepth++;
     history.pushState({anc_overlay: _overlayDepth}, '');
   }
-  function _closeOverlay() {
-    if (_overlayDepth > 0) { _overlayDepth--; history.back(); }
-  }
+  // _closeOverlay is intentionally a no-op — close buttons close directly.
+  // Only the physical back button (popstate) drives history navigation.
+  function _closeOverlay() { /* no-op: panels close themselves */ }
+  // Seed a base state so the very first back press hits popstate instead of
+  // navigating away from the app.
+  history.replaceState({anc_base: true}, '');
   window.addEventListener('popstate', function() {
     if (_overlayDepth > 0) _overlayDepth--;
     // Close topmost overlay in priority order
     var lb = document.getElementById('_photo_lb');
-    if (lb) { lb.remove(); return; }
+    if (lb) { lb.remove(); history.replaceState({anc_base:true},''); return; }
     var td = document.getElementById('track-detail');
-    if (td) { td.style.transform = 'translateX(-50%) translateY(100%)'; setTimeout(function(){ if (td.parentNode) td.parentNode.removeChild(td); }, 320); return; }
+    if (td) { td.style.transform = 'translateX(-50%) translateY(100%)'; setTimeout(function(){ if (td.parentNode) td.parentNode.removeChild(td); }, 320); history.replaceState({anc_base:true},''); return; }
     var ap = g('album-panel');
-    if (ap && ap.classList.contains('open')) { ap.classList.remove('open'); return; }
+    if (ap && ap.classList.contains('open')) { ap.classList.remove('open'); history.replaceState({anc_base:true},''); return; }
+    // Nothing was open — re-anchor so next back press also hits popstate
+    history.pushState({anc_base: true}, '');
   });
 
   function waveBar(h) {
@@ -1326,7 +1336,7 @@
 
   function closePhotoLightbox() {
     var lb = document.getElementById('_photo_lb');
-    if (lb) { lb.remove(); _closeOverlay(); }
+    if (lb) lb.remove();
   }
 
   function openPhotoLightbox(urls, startIdx) {
@@ -1587,7 +1597,6 @@
     if (!panel) return;
     panel.style.transform = 'translateX(-50%) translateY(100%)';
     setTimeout(function(){ if (panel.parentNode) panel.parentNode.removeChild(panel); }, 320);
-    _closeOverlay();
   }
 
   // ────────────────────────────────────────────────
