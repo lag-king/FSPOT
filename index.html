@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>as night calls</title>
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0F0A05">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="as night calls">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Inter:wght@300;400&display=swap" rel="stylesheet">
 <style>
@@ -351,7 +359,7 @@
   .edit-save-btn:disabled { opacity: 0.5; }
 
   /* ── PLAYER ── */
-  .player-wrap { width: 100%; background: var(--paper-mid); border-top: 0.5px solid var(--paper-deep); z-index: 100; flex-shrink: 0; }
+  .player-wrap { width: 100%; background: var(--paper-mid); border-top: 0.5px solid var(--paper-deep); z-index: 300; flex-shrink: 0; }
   .prog-bar { height: 2px; background: var(--paper-deep); cursor: pointer; }
   .prog-fill { height: 100%; background: var(--amber); width: 0%; pointer-events: none; }
   .player-inner { display: flex; align-items: center; gap: 10px; padding: 8px 20px 9px; }
@@ -369,7 +377,7 @@
   .p-time { font-size: 9px; color: var(--ink-faint); font-family: 'Inter', sans-serif; white-space: nowrap; }
 
   /* ── BOTTOM NAV ── */
-  .bottom-nav { width: 100%; background: var(--paper); border-top: 0.5px solid var(--paper-deep); display: flex; z-index: 101; flex-shrink: 0; }
+  .bottom-nav { width: 100%; background: var(--paper); border-top: 0.5px solid var(--paper-deep); display: flex; z-index: 301; flex-shrink: 0; }
   .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0 10px; cursor: pointer; border: none; background: none; color: var(--ink-faint); transition: color 0.15s; }
   .nav-btn.active { color: var(--ink); }
   .nav-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
@@ -843,39 +851,8 @@
       return yb - ya;
     });
 
-    // ── popular tracks (featured = true) ──
-    var popular = visible.filter(function(t){ return t.featured === true; });
-    var singles = visible.filter(function(t){ return t.release_type === 'single'; });
-
-    if (popular.length) {
-      var pl = g('songs-popular-list'); pl.innerHTML = '';
-      popular.forEach(function(t) {
-        var idx = tracks.indexOf(t);
-        pl.appendChild(makeTrackRow(t, idx));
-      });
-      var lbl = g('songs-popular-wrap').querySelector('.sec-label');
-      if (lbl) lbl.textContent = 'popular';
-      g('songs-popular-wrap').style.display = 'block';
-    } else if (singles.length) {
-      var pl = g('songs-popular-list'); pl.innerHTML = '';
-      singles.forEach(function(t) {
-        var idx = tracks.indexOf(t);
-        pl.appendChild(makeTrackRow(t, idx));
-      });
-      var lbl = g('songs-popular-wrap').querySelector('.sec-label');
-      if (lbl) lbl.textContent = 'singles';
-      g('songs-popular-wrap').style.display = 'block';
-    } else {
-      // fallback — show all tracks
-      var pl = g('songs-popular-list'); pl.innerHTML = '';
-      visible.forEach(function(t) {
-        var idx = tracks.indexOf(t);
-        pl.appendChild(makeTrackRow(t, idx));
-      });
-      var lbl = g('songs-popular-wrap').querySelector('.sec-label');
-      if (lbl) lbl.textContent = 'all songs';
-      g('songs-popular-wrap').style.display = 'block';
-    }
+    // ── popular tracks (disabled) ──
+    g('songs-popular-wrap').style.display = 'none';
 
     // ── discography (EPs + albums + singles sorted by year desc) ──
     if (releaseNames.length || singleTracks.length) {
@@ -1202,25 +1179,136 @@
     var visible = data.filter(function(t){ return t.status !== 'inactive'; });
     if (!visible.length) { show('demos-error'); return; }
     demos = visible;
+
     var list = g('demos-list'); list.innerHTML = '';
-    visible.forEach(function(t, i) {
-      var row = document.createElement('div');
-      row.className = 'demo-row';
-      row.id = 'drow-' + i;
-      row.innerHTML =
-        '<span class="demo-num" id="dnum-'+i+'">'+(i+1)+'</span>'+
-        '<div class="demo-waveform" id="dwav-'+i+'" style="'+(t.artwork_url?'display:none;':'')+'">' +
-          waveBar(8)+waveBar(14)+waveBar(10)+waveBar(18)+waveBar(12)+waveBar(16)+waveBar(9)+
-        '</div>'+
-        (t.artwork_url
-          ? '<div class="demo-art" id="dart-'+i+'" style="width:32px;height:32px;border-radius:4px;overflow:hidden;flex-shrink:0;position:relative;"><img src="'+esc(t.artwork_url)+'" style="width:100%;height:100%;object-fit:cover;display:block;"></div>'
-          : '<div class="demo-art" id="dart-'+i+'" style="display:none;width:32px;height:32px;"></div>')+
-        '<span class="demo-title">'+esc(t.title)+'</span>'+
-        '<span class="demo-dur">'+( t.duration || '—' )+'</span>';
-      row.addEventListener('click', function(){ playDemo(i); });
-      list.appendChild(row);
+
+    // Group by release_name
+    var releaseMap = {}, releaseOrder = [], standalone = [];
+    visible.forEach(function(t) {
+      if (t.release_name) {
+        if (!releaseMap[t.release_name]) { releaseMap[t.release_name] = []; releaseOrder.push(t.release_name); }
+        releaseMap[t.release_name].push(t);
+      } else { standalone.push(t); }
     });
+
+    // Releases grid
+    if (releaseOrder.length) {
+      var lbl = document.createElement('div');
+      lbl.style.cssText = 'padding:16px 24px 10px;';
+      lbl.innerHTML = '<div class="sec-label" style="margin:0;">releases</div>';
+      list.appendChild(lbl);
+      var grid = document.createElement('div');
+      grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;padding:0 24px 24px;';
+      releaseOrder.forEach(function(rn) {
+        var rTracks = releaseMap[rn].sort(function(a,b){ return (a.order||0)-(b.order||0); });
+        var art = rTracks[0].artwork_url || null;
+        var card = document.createElement('div');
+        card.className = 'release-card';
+        card.innerHTML =
+          '<div class="release-card-art">'+(art?'<img src="'+esc(art)+'" alt="'+esc(rn)+'">':'<div class="release-card-art-placeholder"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>')+'</div>'+
+          '<div class="release-card-title">'+esc(rn)+'</div>'+
+          '<div class="release-card-meta">'+rTracks.length+' tracks · live session</div>';
+        card.addEventListener('click', function(){ openDemoAlbumPanel(rn, rTracks); });
+        grid.appendChild(card);
+      });
+      list.appendChild(grid);
+    }
+
+    // Standalone demos (no release)
+    if (standalone.length) {
+      var sLbl = document.createElement('div');
+      sLbl.style.cssText = 'padding:0 24px 6px;';
+      sLbl.innerHTML = '<div class="sec-label" style="margin:0;">demos</div>';
+      list.appendChild(sLbl);
+      standalone.forEach(function(t) {
+        var gi = demos.indexOf(t);
+        var row = document.createElement('div');
+        row.className = 'demo-row'; row.id = 'drow-'+gi;
+        row.innerHTML =
+          '<span class="demo-num" id="dnum-'+gi+'">'+(gi+1)+'</span>'+
+          '<div class="demo-waveform" id="dwav-'+gi+'" style="'+(t.artwork_url?'display:none;':'')+'">' +
+            waveBar(8)+waveBar(14)+waveBar(10)+waveBar(18)+waveBar(12)+waveBar(16)+waveBar(9)+
+          '</div>'+
+          (t.artwork_url
+            ? '<div style="width:32px;height:32px;border-radius:4px;overflow:hidden;flex-shrink:0;position:relative;"><img src="'+esc(t.artwork_url)+'" style="width:100%;height:100%;object-fit:cover;display:block;"></div>'
+            : '<div style="display:none;width:32px;height:32px;"></div>')+
+          '<span class="demo-title">'+esc(t.title)+'</span>'+
+          '<span class="demo-dur">'+(t.duration||'—')+'</span>';
+        row.addEventListener('click', function(){ playDemo(gi); });
+        list.appendChild(row);
+      });
+    }
+
     show('demos-content');
+  }
+
+  function openDemoAlbumPanel(name, releaseTracks) {
+    g('alb-panel-title').textContent = name;
+    var body = g('alb-panel-body'); body.innerHTML = '';
+    var art = releaseTracks[0] && releaseTracks[0].artwork_url;
+
+    // Parse gallery URLs from lyrics field (__gallery__:[...])
+    var galleryUrls = [];
+    var firstLyrics = releaseTracks[0] && releaseTracks[0].lyrics;
+    if (firstLyrics && firstLyrics.indexOf('__gallery__:') === 0) {
+      try { galleryUrls = JSON.parse(firstLyrics.replace('__gallery__:', '')); } catch(e){}
+    }
+
+    body.innerHTML =
+      (art ? '<img class="alb-hero" src="'+esc(art)+'" alt="'+esc(name)+'">'
+           : '<div class="alb-hero-placeholder"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>')+
+      '<div class="alb-info">'+
+        '<div class="alb-name">'+esc(name)+'</div>'+
+        '<div class="alb-meta">'+releaseTracks.length+' tracks · live session</div>'+
+        '<button class="alb-play-all" onclick="playDemoAlbum(\''+esc(name)+'\')"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> play all</button>'+
+      '</div>';
+
+    // Photo gallery strip
+    if (galleryUrls.length) {
+      var stripWrap = document.createElement('div');
+      stripWrap.style.cssText = 'padding:0 16px 14px;';
+      var strip = document.createElement('div');
+      strip.style.cssText = 'display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;';
+      galleryUrls.forEach(function(url) {
+        var img = document.createElement('img');
+        img.src = url; img.style.cssText = 'width:120px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0;cursor:pointer;';
+        img.addEventListener('click', function(){ openPhotoLightbox(url); });
+        strip.appendChild(img);
+      });
+      stripWrap.appendChild(strip);
+      body.appendChild(stripWrap);
+    }
+
+    var trackList = document.createElement('div'); trackList.className = 'alb-tracks';
+    releaseTracks.forEach(function(t, i) {
+      var di = demos.indexOf(t);
+      var dur = t.duration ? Math.floor(t.duration/60)+':'+String(t.duration%60).padStart(2,'0') : '—';
+      var row = document.createElement('div');
+      row.className = 'alb-track-row alb-demo-row'+(di === currentDemoIdx && demoMode ? ' playing' : '');
+      row.dataset.demoIdx = di;
+      row.innerHTML =
+        '<span class="alb-track-num">'+(i+1)+'</span>'+
+        '<div class="alb-track-info"><div class="alb-track-title">'+esc(t.title)+'</div></div>'+
+        '<span class="alb-track-dur">'+dur+'</span>';
+      row.addEventListener('click', function(){ if (di >= 0) playDemo(di); });
+      trackList.appendChild(row);
+    });
+    body.appendChild(trackList);
+    g('album-panel').classList.add('open');
+  }
+
+  function playDemoAlbum(name) {
+    var first = demos.find(function(t){ return t.release_name === name; });
+    if (first) playDemo(demos.indexOf(first));
+  }
+
+  function openPhotoLightbox(url) {
+    var ex = document.getElementById('_photo_lb'); if (ex) ex.remove();
+    var lb = document.createElement('div'); lb.id = '_photo_lb';
+    lb.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;';
+    lb.innerHTML = '<img src="'+esc(url)+'" style="max-width:100%;max-height:90%;object-fit:contain;border-radius:4px;">';
+    lb.addEventListener('click', function(){ lb.remove(); });
+    document.querySelector('.device').appendChild(lb);
   }
 
   function playDemo(idx) {
@@ -1247,6 +1335,8 @@
     // de-highlight songs rows
     document.querySelectorAll('.track-row').forEach(function(r){ r.classList.remove('playing'); });
     document.querySelectorAll('[id^="tnum-"]').forEach(function(n, i){ n.innerHTML = (i+1); });
+    // sync demo album panel highlights
+    document.querySelectorAll('.alb-demo-row').forEach(function(r){ r.classList.toggle('playing', parseInt(r.dataset.demoIdx) === idx); });
   }
 
   function prevDemoTrack() { if (!demos.length) return; playDemo(currentDemoIdx > 0 ? currentDemoIdx - 1 : demos.length - 1); }
@@ -2422,30 +2512,12 @@
           '<div class="featured-card-meta">'+year+' · '+rTracks.length+' track'+(rTracks.length!==1?'s':'')+'</div>'+
         '</div>'+
         '<div class="featured-play-btn"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>';
-      card.addEventListener('click', function(){ openAlbumPanel(rn, rTracks); });
-      featuredEl.appendChild(card);
-    } else if (val.indexOf('track:') === 0) {
-      var tid = parseInt(val.slice(6));
-      var t = tracks.find(function(t){ return t.id === tid; });
-      if (!t) return;
-      var card = document.createElement('div');
-      card.className = 'featured-card';
-      card.innerHTML =
-        (t.artwork_url ? '<img class="featured-card-art" src="'+esc(t.artwork_url)+'" alt="'+esc(t.title)+'">'
-                       : '<div class="featured-card-art-placeholder"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>')+
-        '<div class="featured-card-overlay">'+
-          '<div class="featured-card-label">latest single</div>'+
-          '<div class="featured-card-title">'+esc(t.title)+'</div>'+
-          '<div class="featured-card-meta">'+(t.year||'')+'</div>'+
-        '</div>'+
-        '<div class="featured-play-btn"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>';
       card.addEventListener('click', function(){ playTrack(tracks.indexOf(t)); });
       featuredEl.appendChild(card);
     }
   }
 
   function renderVideoHero() {
-    // prepend a hero card to videos section if set
     var val = appConfig['hero_videos'] || '';
     renderMediaHero('videos', val, 'video');
   }
@@ -2506,6 +2578,12 @@
     loadUpdates();
   }
   init();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
 </script>
 </body>
 </html>
