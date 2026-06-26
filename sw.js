@@ -1,4 +1,4 @@
-const CACHE = 'anc-v4';
+const CACHE = 'anc-v5';
 const SHELL = ['/', '/index.html', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', e => {
